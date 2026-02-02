@@ -8,7 +8,7 @@ import TaskBoard from '@/components/TaskBoard'
 import ActivityLog from '@/components/ActivityLog'
 import NotesPanel from '@/components/NotesPanel'
 import DeliverablesTab from '@/components/DeliverablesTab'
-import TokenUsage from '@/components/TokenUsage'
+import TokenUsageComponent from '@/components/TokenUsage'
 
 export default function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([])
