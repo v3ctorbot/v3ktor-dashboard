@@ -33,14 +33,14 @@ export default function Dashboard() {
           })
         }
       })
-      .subscribe()
 
     const activitySubscription = supabase
       .channel('activity-channel')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'activity_log' }, (payload) => {
-        setActivityLog((prev) => [payload.new as ActivityLogEntry, ...prev])
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setActivityLog((prev) => [payload.new as ActivityLogEntry, ...prev])
+        }
       })
-      .subscribe()
 
     const notesSubscription = supabase
       .channel('notes-channel')
@@ -51,30 +51,30 @@ export default function Dashboard() {
           setNotes((prev) => prev.map((n) => (n.id === payload.new.id ? payload.new as Note : n)))
         }
       })
-      .subscribe()
 
     const statusSubscription = supabase
       .channel('status-channel')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'status' }, (payload) => {
-        if (payload.new) {
+        if (payload.eventType === 'UPDATE') {
           setStatus(payload.new as Status)
         }
       })
-      .subscribe()
 
     const deliverablesSubscription = supabase
       .channel('deliverables-channel')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'deliverables' }, (payload) => {
-        setDeliverables((prev) => [payload.new as Deliverable, ...prev])
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'deliverables' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setDeliverables((prev) => [payload.new as Deliverable, ...prev])
+        }
       })
-      .subscribe()
 
     const tokenSubscription = supabase
-      .channel('token-channel')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'token_usage' }, (payload) => {
-        setTokenUsage((prev) => [payload.new as TokenUsage, ...prev])
+      .channel('tokens-channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'token_usage' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setTokenUsage((prev) => [payload.new as TokenUsage, ...prev])
+        }
       })
-      .subscribe()
 
     return () => {
       tasksSubscription.unsubscribe()
@@ -93,7 +93,7 @@ export default function Dashboard() {
       supabase.from('notes').select('*').order('created_at', { ascending: false }),
       supabase.from('status').select('*').single(),
       supabase.from('deliverables').select('*').order('created_at', { ascending: false }),
-      supabase.from('token_usage').select('*').order('timestamp', { ascending: false }),
+      supabase.from('token_usage').select('*').order('timestamp', { ascending: false })
     ])
 
     if (tasksRes.data) setTasks(tasksRes.data)
@@ -105,25 +105,17 @@ export default function Dashboard() {
   }
 
   const handleAddNote = async (content: string) => {
-    const { error } = await supabase
-      .from('notes')
-      .insert({ content, status: 'unseen' })
+    const { error } = await supabase.from('notes').insert({ content, status: 'unseen' })
     if (error) console.error('Failed to add note:', error)
   }
 
   const handleMarkSeen = async (noteId: string) => {
-    const { error } = await supabase
-      .from('notes')
-      .update({ status: 'seen' })
-      .eq('id', noteId)
+    const { error } = await supabase.from('notes').update({ status: 'seen' }).eq('id', noteId)
     if (error) console.error('Failed to mark note as seen:', error)
   }
 
   const handleMarkProcessed = async (noteId: string) => {
-    const { error } = await supabase
-      .from('notes')
-      .update({ status: 'processed' })
-      .eq('id', noteId)
+    const { error } = await supabase.from('notes').update({ status: 'processed', processed_at: new Date().toISOString() }).eq('id', noteId)
     if (error) console.error('Failed to mark note as processed:', error)
   }
 
@@ -166,7 +158,7 @@ export default function Dashboard() {
         </div>
 
         <div className="md:col-span-1">
-          <TokenUsage usage={tokenUsage} />
+          <TokenUsageComponent usage={tokenUsage} />
         </div>
       </div>
     </div>
