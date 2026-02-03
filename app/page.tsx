@@ -22,6 +22,12 @@ export default function Dashboard() {
     // Initial data fetch
     fetchAllData()
 
+    // Listen for header refresh events
+    const handleRefreshEvent = () => {
+      fetchAllData()
+    }
+    if (typeof window !== 'undefined') window.addEventListener('v3ktor:refresh', handleRefreshEvent)
+
     // Set up realtime subscriptions
     const tasksSubscription = supabase
       .channel('tasks-channel')
@@ -83,6 +89,7 @@ export default function Dashboard() {
       statusSubscription.unsubscribe()
       deliverablesSubscription.unsubscribe()
       tokenSubscription.unsubscribe()
+      if (typeof window !== 'undefined') window.removeEventListener('v3ktor:refresh', handleRefreshEvent)
     }
   }, [])
 
@@ -120,45 +127,57 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 md:p-8">
+    <div className="min-h-screen">
       {/* Desktop: 2x3 Grid | Mobile: Stacked */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Row 1: Status + Task Board + Activity Log */}
         <div className="md:col-span-1">
           {status && (
-            <StatusPanel
-              state={status.operational_state}
-              currentTask={status.current_task}
-              currentTaskId={status.current_task_id}
-              activeSubAgents={status.active_sub_agents || []}
-            />
+            <div className="card">
+              <StatusPanel
+                state={status.operational_state}
+                currentTask={status.current_task}
+                currentTaskId={status.current_task_id}
+                activeSubAgents={status.active_sub_agents || []}
+              />
+            </div>
           )}
         </div>
 
         <div className="md:col-span-1">
-          <TaskBoard tasks={tasks} />
+          <div className="card">
+            <TaskBoard tasks={tasks} />
+          </div>
         </div>
 
         <div className="md:col-span-1">
-          <ActivityLog logs={activityLog} />
+          <div className="card">
+            <ActivityLog logs={activityLog} />
+          </div>
         </div>
 
         {/* Row 2: Notes + Deliverables + Token Usage */}
         <div className="md:col-span-1">
-          <NotesPanel
-            notes={notes}
-            onAddNote={handleAddNote}
-            onMarkSeen={handleMarkSeen}
-            onMarkProcessed={handleMarkProcessed}
-          />
+          <div className="card">
+            <NotesPanel
+              notes={notes}
+              onAddNote={handleAddNote}
+              onMarkSeen={handleMarkSeen}
+              onMarkProcessed={handleMarkProcessed}
+            />
+          </div>
         </div>
 
         <div className="md:col-span-1">
-          <DeliverablesTab deliverables={deliverables} />
+          <div className="card">
+            <DeliverablesTab deliverables={deliverables} />
+          </div>
         </div>
 
         <div className="md:col-span-1">
-          <TokenUsageComponent usage={tokenUsage} />
+          <div className="card">
+            <TokenUsageComponent usage={tokenUsage} />
+          </div>
         </div>
       </div>
     </div>
