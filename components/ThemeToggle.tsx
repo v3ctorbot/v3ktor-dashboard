@@ -19,10 +19,10 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-gray-200 bg-white text-sm hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 transition-colors"
+      className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-md border border-gray-200 bg-white text-sm hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 transition-colors"
       aria-label="Toggle theme"
     >
-      {theme === 'light' ? <MoonIcon className="w-5 h-5 text-gray-700" /> : <SunIcon className="w-5 h-5 text-yellow-400" />}
+      {theme === 'light' ? <MoonIcon className="header-icon text-gray-700" /> : <SunIcon className="header-icon text-yellow-400" />}
       <span className="hidden sm:inline">{theme === 'light' ? 'Dark' : 'Light'}</span>
     </button>
   )

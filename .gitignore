@@ -1,1 +1,69 @@
-node_modules
+# Node modules
+node_modules/
+
+# Next.js build output
+.next/
+
+# Production output
+out/
+dist/
+build/
+
+# Local env files (should not be committed)
+.env.local
+.env.*.local
+.env
+
+# Vercel / deployment
+.vercel/
+vercel.json
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Runtime data
+*.pid
+*.seed
+*.pid.lock
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor directories and files
+.vscode/
+.idea/
+*.sublime-* 
+*.code-workspace
+
+# TypeScript
+.tsbuildinfo
+
+# Optional npm cache
+.npm/
+
+# Next.js cache
+.next/cache/
+
+# Parcel cache
+/.parcel-cache/
+
+# Yarn Integrity file
+.yarn-integrity
+
+# Coverage
+coverage/
+
+# Test output
+/jest-results.json
+
+# Misc
+*.tgz
+*.zip
+*.tar.gz
+

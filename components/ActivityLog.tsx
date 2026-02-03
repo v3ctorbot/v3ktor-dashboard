@@ -24,7 +24,7 @@ export default function ActivityLog({ logs }: ActivityLogProps) {
     <div className="card">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <ClockIcon className="w-6 h-6 text-ft-dark" />
+          <ClockIcon className="header-icon text-ft-dark" />
           <h2 className="text-xl font-bold text-ft-dark font-heading">Activity Log</h2>
         </div>
         <div className="text-sm text-gray-500">Recent events</div>
@@ -32,7 +32,9 @@ export default function ActivityLog({ logs }: ActivityLogProps) {
 
       {logs.length === 0 ? (
         <div className="flex items-center gap-3 text-gray-500">
-          <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">✳</div>
+          <div className="rounded-full bg-gray-100 flex items-center justify-center p-2">
+            <ClockIcon className="empty-icon text-gray-400" />
+          </div>
           <p className="italic">No activity recorded yet.</p>
         </div>
       ) : (

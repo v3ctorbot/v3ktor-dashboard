@@ -33,7 +33,7 @@ export default function StatusPanel({ state, currentTask, currentTaskId, activeS
     <div className="card">
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <BoltIcon className="w-7 h-7 text-ft-light" />
+          <BoltIcon className="header-icon text-ft-light" />
           <div>
             <h2 className="text-xl font-bold font-heading">V3ktor Status</h2>
             <div className="text-sm text-gray-500">Operational overview</div>

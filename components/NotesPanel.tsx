@@ -36,7 +36,7 @@ export default function NotesPanel({ notes, onAddNote, onMarkSeen, onMarkProcess
   return (
     <div className="card">
       <div className="flex items-center gap-3 mb-4">
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-ft-dark" viewBox="0 0 20 20" fill="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" className="header-icon text-ft-dark" width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
           <path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2H7l-5 3V5z" />
         </svg>
         <h2 className="text-xl font-bold text-ft-dark font-heading">Notes</h2>
@@ -64,7 +64,11 @@ export default function NotesPanel({ notes, onAddNote, onMarkSeen, onMarkProcess
       <div className="space-y-3 max-h-[420px] overflow-y-auto">
         {notes.length === 0 ? (
           <div className="flex items-center gap-3 text-gray-500">
-            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">💬</div>
+            <div className="rounded-full bg-gray-100 flex items-center justify-center p-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="empty-icon text-gray-400" width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2H7l-5 3V5z" />
+              </svg>
+            </div>
             <p className="italic">No notes yet.</p>
           </div>
         ) : (

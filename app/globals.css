@@ -35,11 +35,12 @@
   }
 
   .btn {
-    @apply inline-flex items-center gap-2 px-4 py-2 rounded-md bg-ft-dark text-white text-sm font-medium hover:bg-ft-secondary-1 transition-colors;
+    @apply inline-flex items-center gap-1 px-3 py-1 rounded-md bg-ft-dark text-white text-sm font-medium hover:bg-ft-secondary-1 transition-colors;
     appearance: none;
     -webkit-appearance: none;
     border: 0;
     box-shadow: 0 1px 2px rgba(10,11,13,0.04);
+    line-height: 1;
   }
 
   .input, textarea {
@@ -61,6 +62,16 @@ button, input[type="button"], input[type="submit"], a.button {
 }
 .app-header-inner {
   @apply max-w-7xl mx-auto px-4 py-4 flex items-center justify-between;
+}
+
+.header-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.empty-icon {
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 /* Card shadow refinement */

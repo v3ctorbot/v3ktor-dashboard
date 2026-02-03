@@ -41,7 +41,7 @@ export default function TaskBoard({ tasks }: TaskBoardProps) {
     <div className="card">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <ClipboardDocumentListIcon className="w-6 h-6 text-ft-dark" />
+          <ClipboardDocumentListIcon className="header-icon text-ft-dark" />
           <h2 className="text-xl font-bold text-ft-dark font-heading">Task Board</h2>
         </div>
         <div className="text-sm text-gray-500">Total: <span className="font-mono">{totalTasks}</span></div>

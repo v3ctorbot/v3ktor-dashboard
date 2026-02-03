@@ -13,7 +13,7 @@ export default function TokenUsage({ usage }: TokenUsageProps) {
   return (
     <div className="card">
       <div className="flex items-center gap-3 mb-4">
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-ft-dark" viewBox="0 0 20 20" fill="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" className="header-icon text-ft-dark" width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
           <path d="M10 2a6 6 0 100 12A6 6 0 0010 2zM9 7h2v3H9V7z" />
         </svg>
         <h2 className="text-xl font-bold mb-0 text-ft-dark font-heading">Token Usage</h2>
