@@ -182,19 +182,48 @@ async function createDeliverable(title, type, filePath, externalUrl, taskId) {
   console.log(JSON.stringify({ success: true, data }))
 }
 
-async function logTokens(sessionId, tokensUsed) {
+// Model pricing per million tokens (USD)
+const MODEL_PRICING = {
+  'anthropic/claude-opus-4-5': { input: 15, output: 75 },
+  'anthropic/claude-sonnet-4': { input: 3, output: 15 },
+  'anthropic/claude-haiku': { input: 0.25, output: 1.25 },
+  'openai/gpt-4o': { input: 2.5, output: 10 },
+  'openai/gpt-4-turbo': { input: 10, output: 30 },
+  'zai/glm-4.7': { input: 0.5, output: 1.5 },
+  'default': { input: 1, output: 5 }
+}
+
+function calculateCost(model, inputTokens, outputTokens) {
+  const pricing = MODEL_PRICING[model] || MODEL_PRICING['default']
+  const inputCost = (inputTokens / 1_000_000) * pricing.input
+  const outputCost = (outputTokens / 1_000_000) * pricing.output
+  return inputCost + outputCost
+}
+
+async function logTokens(sessionId, inputTokens, outputTokens, model, contextUsed, contextMax) {
+  const input = parseInt(inputTokens) || 0
+  const output = parseInt(outputTokens) || 0
+  const totalTokens = input + output
+  const estimatedCost = calculateCost(model || 'default', input, output)
+
   const { data, error } = await supabase
     .from('token_usage')
     .insert({
       session_id: sessionId,
-      tokens_used: parseInt(tokensUsed),
+      tokens_used: totalTokens,
+      input_tokens: input,
+      output_tokens: output,
+      model: model || 'unknown',
+      estimated_cost: estimatedCost,
+      context_used: parseInt(contextUsed) || 0,
+      context_max: parseInt(contextMax) || 200000,
       timestamp: new Date().toISOString()
     })
     .select()
     .single()
 
   if (error) throw error
-  console.log(JSON.stringify({ success: true, data }))
+  console.log(JSON.stringify({ success: true, data, cost_usd: estimatedCost }))
 }
 
 async function getStatus() {
@@ -206,6 +235,112 @@ async function getStatus() {
 
   if (error && error.code !== 'PGRST116') throw error
   console.log(JSON.stringify({ success: true, data: data || null }))
+}
+
+// ============================================
+// GOALS MANAGEMENT
+// ============================================
+
+async function createGoal(goalId, title, description, targetDate, status) {
+  const { data, error } = await supabase
+    .from('goals')
+    .insert({
+      goal_id: goalId,
+      title,
+      description: description || null,
+      target_date: targetDate || null,
+      status: status || 'active',
+      progress: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  console.log(JSON.stringify({ success: true, data }))
+}
+
+async function updateGoal(goalId, field, value) {
+  const updateData = { updated_at: new Date().toISOString() }
+  
+  if (field === 'progress') {
+    updateData.progress = parseInt(value)
+  } else if (field === 'status') {
+    updateData.status = value
+  } else if (field === 'title') {
+    updateData.title = value
+  } else if (field === 'description') {
+    updateData.description = value
+  }
+
+  const { data, error } = await supabase
+    .from('goals')
+    .update(updateData)
+    .eq('goal_id', goalId)
+    .select()
+    .single()
+
+  if (error) throw error
+  console.log(JSON.stringify({ success: true, data }))
+}
+
+async function listGoals(status) {
+  let query = supabase.from('goals').select('*')
+  if (status) {
+    query = query.eq('status', status)
+  }
+  const { data, error } = await query.order('created_at', { ascending: false })
+  if (error) throw error
+  console.log(JSON.stringify({ success: true, data }))
+}
+
+// ============================================
+// TOKEN SUMMARY
+// ============================================
+
+async function getTokenSummary(period) {
+  let since = new Date()
+  if (period === 'day') {
+    since.setHours(0, 0, 0, 0)
+  } else if (period === 'week') {
+    since.setDate(since.getDate() - 7)
+  } else if (period === 'month') {
+    since.setMonth(since.getMonth() - 1)
+  }
+
+  const { data, error } = await supabase
+    .from('token_usage')
+    .select('*')
+    .gte('timestamp', since.toISOString())
+    .order('timestamp', { ascending: false })
+
+  if (error) throw error
+
+  const summary = {
+    period,
+    total_input: 0,
+    total_output: 0,
+    total_cost: 0,
+    entries: data?.length || 0,
+    by_model: {}
+  }
+
+  for (const entry of (data || [])) {
+    summary.total_input += entry.input_tokens || 0
+    summary.total_output += entry.output_tokens || 0
+    summary.total_cost += parseFloat(entry.estimated_cost) || 0
+
+    const model = entry.model || 'unknown'
+    if (!summary.by_model[model]) {
+      summary.by_model[model] = { input: 0, output: 0, cost: 0 }
+    }
+    summary.by_model[model].input += entry.input_tokens || 0
+    summary.by_model[model].output += entry.output_tokens || 0
+    summary.by_model[model].cost += parseFloat(entry.estimated_cost) || 0
+  }
+
+  console.log(JSON.stringify({ success: true, data: summary }))
 }
 
 // ============================================
@@ -255,7 +390,22 @@ async function main() {
         break
 
       case 'tokens':
-        await logTokens(args[1], args[2])
+        // tokens <session_id> <input_tokens> <output_tokens> [model] [context_used] [context_max]
+        await logTokens(args[1], args[2], args[3], args[4], args[5], args[6])
+        break
+
+      case 'goal':
+        if (args[1] === 'create') {
+          await createGoal(args[2], args[3], args[4], args[5], args[6])
+        } else if (args[1] === 'update') {
+          await updateGoal(args[2], args[3], args[4])
+        } else if (args[1] === 'list') {
+          await listGoals(args[2])
+        }
+        break
+
+      case 'summary':
+        await getTokenSummary(args[1] || 'day')
         break
 
       default:
@@ -268,7 +418,9 @@ async function main() {
             task: 'task <create|update|list> ...',
             notes: 'notes <unseen|seen|processed> ...',
             deliverable: 'deliverable <title> <type> [file_path] [external_url] [task_id]',
-            tokens: 'tokens <session_id> <tokens_used>'
+            tokens: 'tokens <session_id> <input> <output> [model] [context_used] [context_max]',
+            goal: 'goal <create|update|list> ...',
+            summary: 'summary <day|week|month>'
           }
         }))
     }

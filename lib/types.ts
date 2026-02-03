@@ -65,5 +65,23 @@ export interface TokenUsage {
   id: string
   session_id: string
   tokens_used: number
+  input_tokens?: number
+  output_tokens?: number
+  model?: string
+  estimated_cost?: number
+  context_used?: number
+  context_max?: number
   timestamp: string
+}
+
+export interface Goal {
+  id: string
+  goal_id: string
+  title: string
+  description: string | null
+  status: 'active' | 'paused' | 'completed' | 'cancelled'
+  progress: number
+  target_date: string | null
+  created_at: string
+  updated_at: string
 }

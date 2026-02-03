@@ -67,3 +67,5 @@ coverage/
 *.zip
 *.tar.gz
 
+.vercel
+.env*.local
