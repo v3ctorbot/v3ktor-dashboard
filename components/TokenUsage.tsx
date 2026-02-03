@@ -35,17 +35,31 @@ export default function TokenUsage({ usage }: TokenUsageProps) {
         </div>
       </div>
 
-      {/* Usage History */}
-      <div className="space-y-2 max-h-[300px] overflow-y-auto">
-        {usage.map((entry) => (
-          <div key={entry.id} className="flex justify-between items-center bg-white p-3 rounded-md text-sm border border-gray-100">
-            <div className="flex-1">
-              <div className="font-medium text-gray-800">Session: {entry.session_id}</div>
-              <div className="text-xs text-gray-500">{new Date(entry.timestamp).toLocaleString()}</div>
+      {/* Usage History & Visuals */}
+      <div className="space-y-4 max-h-[400px] overflow-y-auto">
+        {usage.map((entry) => {
+          const maxTokens = Math.max(...usage.map(u => u.tokens_used), 1)
+          const percentage = Math.max((entry.tokens_used / maxTokens) * 100, 5) // Min 5% width for visibility
+          return (
+            <div key={entry.id} className="bg-white p-3 rounded-md border border-gray-100 text-sm">
+              <div className="flex justify-between items-center mb-2">
+                <div>
+                  <div className="font-medium text-gray-800">Session: {entry.session_id}</div>
+                  <div className="text-xs text-gray-500">{new Date(entry.timestamp).toLocaleString()}</div>
+                </div>
+                <div className="text-lg font-bold text-ft-dark">{entry.tokens_used.toLocaleString()}</div>
+              </div>
+
+              {/* Simple Bar Chart */}
+              <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                <div
+                  className="bg-ft-light h-2.5 rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${percentage}%` }}
+                ></div>
+              </div>
             </div>
-            <div className="text-lg font-bold text-ft-dark">{entry.tokens_used.toLocaleString()}</div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

@@ -11,76 +11,70 @@
 }
 
 @layer base {
-  html, body, #root {
+
+  html,
+  body,
+  #root {
     height: 100%;
   }
 
   body {
-    font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-    background: linear-gradient(180deg, #fbfdff 0%, #f7fafc 100%);
-    color: #0f172a;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    @apply bg-gray-100 text-slate-900;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    font-family: Gill-Sans, 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
-    color: var(--color-ft-dark);
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: Inter, -apple-system, font-sans;
+    letter-spacing: -0.025em;
+    @apply text-slate-900;
   }
 }
 
 @layer components {
+
+  /* Clean Card Style - Klaus Dark */
   .card {
-    @apply bg-white rounded-lg shadow-sm p-6 border border-gray-100;
+    @apply bg-klaus-card rounded-xl border border-klaus-border shadow-lg p-5 text-klaus-text;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-klaus-bg;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-klaus-border rounded-full hover:bg-slate-500;
+  }
+
+  /* Form Elements */
+  .input,
+  textarea {
+    @apply w-full p-2.5 border border-klaus-border rounded-lg bg-klaus-bg text-klaus-text focus:outline-none focus:ring-2 focus:ring-ft-light/50 focus:border-ft-light transition-shadow placeholder-gray-600;
   }
 
   .btn {
-    @apply inline-flex items-center gap-1 px-3 py-1 rounded-md bg-ft-dark text-white text-sm font-medium hover:bg-ft-secondary-1 transition-colors;
-    appearance: none;
-    -webkit-appearance: none;
-    border: 0;
-    box-shadow: 0 1px 2px rgba(10,11,13,0.04);
-    line-height: 1;
-  }
-
-  .input, textarea {
-    @apply w-full p-3 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-ft-light;
-    appearance: none;
-    -webkit-appearance: none;
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-ft-light text-white text-sm font-medium hover:bg-blue-600 transition-colors shadow-sm;
   }
 }
 
-/* Reset default button styles for better consistency */
-button, input[type="button"], input[type="submit"], a.button {
-  appearance: none;
-  -webkit-appearance: none;
-}
-
-/* Header styling for professional spacing */
-.app-header {
-  @apply w-full bg-white border-b border-gray-100;
-}
-.app-header-inner {
-  @apply max-w-7xl mx-auto px-4 py-4 flex items-center justify-between;
-}
-
+/* Utilities */
 .header-icon {
-  width: 1rem;
-  height: 1rem;
+  @apply w-5 h-5;
+  /* Fallback if used elsewhere */
 }
 
-.empty-icon {
-  width: 1.25rem;
-  height: 1.25rem;
-}
-
-/* Card shadow refinement */
-.card {
-  box-shadow: 0 6px 18px rgba(15, 20, 40, 0.06);
-}
-
-/* Improve focus outlines for accessibility */
-:focus {
-  outline: none;
-  box-shadow: 0 0 0 4px rgba(1,162,233,0.15);
+/* Focus styles */
+:focus-visible {
+  outline: 2px solid var(--color-ft-light);
+  outline-offset: 2px;
 }

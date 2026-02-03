@@ -106,9 +106,24 @@ export default function Dashboard() {
     if (tasksRes.data) setTasks(tasksRes.data)
     if (activityRes.data) setActivityLog(activityRes.data)
     if (notesRes.data) setNotes(notesRes.data)
-    if (statusRes.data) setStatus(statusRes.data)
     if (deliverablesRes.data) setDeliverables(deliverablesRes.data)
     if (tokenRes.data) setTokenUsage(tokenRes.data)
+
+    // Handle Status (Initialize if missing)
+    if (statusRes.data) {
+      setStatus(statusRes.data)
+    } else if (statusRes.error && (statusRes.error.code === 'PGRST116' || statusRes.error.details?.includes('0 rows'))) {
+      console.log('Status row missing, initializing...')
+      const newStatus = {
+        operational_state: 'idle',
+        current_task: null,
+        current_task_id: null,
+        active_sub_agents: []
+      }
+      const { data, error } = await supabase.from('status').insert(newStatus).select().single()
+      if (data) setStatus(data as Status)
+      if (error) console.error('Failed to initialize status:', error)
+    }
   }
 
   const handleAddNote = async (content: string) => {
@@ -121,19 +136,23 @@ export default function Dashboard() {
     if (error) console.error('Failed to mark note as seen:', error)
   }
 
-  const handleMarkProcessed = async (noteId: string) => {
-    const { error } = await supabase.from('notes').update({ status: 'processed', processed_at: new Date().toISOString() }).eq('id', noteId)
+  const handleMarkProcessed = async (noteId: string, relatedTaskId?: string) => {
+    const updateData: any = { status: 'processed', processed_at: new Date().toISOString() }
+    if (relatedTaskId) updateData.related_task_id = relatedTaskId
+
+    const { error } = await supabase.from('notes').update(updateData).eq('id', noteId)
     if (error) console.error('Failed to mark note as processed:', error)
   }
 
   return (
     <div className="min-h-screen">
-      {/* Desktop: 2x3 Grid | Mobile: Stacked */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Row 1: Status + Task Board + Activity Log */}
-        <div className="md:col-span-1">
+      {/* Professional Bento Grid Layout */}
+      <div className="grid grid-cols-12 gap-6 pb-8">
+
+        {/* ROW 1: Status & Tokens (Hero Section) */}
+        <div className="col-span-12 lg:col-span-8 xl:col-span-9">
           {status && (
-            <div className="card">
+            <div className="h-full">
               <StatusPanel
                 state={status.operational_state}
                 currentTask={status.current_task}
@@ -143,42 +162,42 @@ export default function Dashboard() {
             </div>
           )}
         </div>
-
-        <div className="md:col-span-1">
-          <div className="card">
-            <TaskBoard tasks={tasks} />
+        <div className="col-span-12 lg:col-span-4 xl:col-span-3">
+          <div className="h-full">
+            <TokenUsageComponent usage={tokenUsage} />
           </div>
         </div>
 
-        <div className="md:col-span-1">
-          <div className="card">
+        {/* ROW 2: Main Workspace (Tasks & Activity) */}
+        <div className="col-span-12 lg:col-span-8">
+          <div className="h-[700px] flex flex-col">
+            <TaskBoard tasks={tasks} />
+          </div>
+        </div>
+        <div className="col-span-12 lg:col-span-4">
+          <div className="h-[700px] flex flex-col">
             <ActivityLog logs={activityLog} />
           </div>
         </div>
 
-        {/* Row 2: Notes + Deliverables + Token Usage */}
-        <div className="md:col-span-1">
-          <div className="card">
+        {/* ROW 3: Tools (Communication & Artifacts) */}
+        <div className="col-span-12 lg:col-span-6">
+          <div className="h-full">
             <NotesPanel
               notes={notes}
+              tasks={tasks}
               onAddNote={handleAddNote}
               onMarkSeen={handleMarkSeen}
               onMarkProcessed={handleMarkProcessed}
             />
           </div>
         </div>
-
-        <div className="md:col-span-1">
-          <div className="card">
+        <div className="col-span-12 lg:col-span-6">
+          <div className="h-full">
             <DeliverablesTab deliverables={deliverables} />
           </div>
         </div>
 
-        <div className="md:col-span-1">
-          <div className="card">
-            <TokenUsageComponent usage={tokenUsage} />
-          </div>
-        </div>
       </div>
     </div>
   )

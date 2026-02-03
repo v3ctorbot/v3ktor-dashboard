@@ -1,17 +1,20 @@
 'use client'
 
 import { useState } from 'react'
-import { Note } from '@/lib/types'
+import { Note, Task } from '@/lib/types'
 
 interface NotesPanelProps {
   notes: Note[]
+  tasks: Task[]
   onAddNote: (content: string) => void
   onMarkSeen: (noteId: string) => void
-  onMarkProcessed: (noteId: string) => void
+  onMarkProcessed: (noteId: string, relatedTaskId?: string) => void
 }
 
-export default function NotesPanel({ notes, onAddNote, onMarkSeen, onMarkProcessed }: NotesPanelProps) {
+export default function NotesPanel({ notes, tasks, onAddNote, onMarkSeen, onMarkProcessed }: NotesPanelProps) {
   const [newNote, setNewNote] = useState('')
+  const [processingNoteId, setProcessingNoteId] = useState<string | null>(null)
+  const [selectedTaskId, setSelectedTaskId] = useState<string>('')
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -19,6 +22,12 @@ export default function NotesPanel({ notes, onAddNote, onMarkSeen, onMarkProcess
       onAddNote(newNote.trim())
       setNewNote('')
     }
+  }
+
+  const handleProcessSubmit = (noteId: string) => {
+    onMarkProcessed(noteId, selectedTaskId || undefined)
+    setProcessingNoteId(null)
+    setSelectedTaskId('')
   }
 
   const statusStyles = {
@@ -86,7 +95,7 @@ export default function NotesPanel({ notes, onAddNote, onMarkSeen, onMarkProcess
               <p className="text-gray-800 mb-3">{note.content}</p>
 
               {note.related_task_id && (
-                <div className="text-xs text-ft-dark font-medium">
+                <div className="text-xs text-ft-dark font-medium mb-2">
                   Related to task: {note.related_task_id}
                 </div>
               )}
@@ -102,12 +111,47 @@ export default function NotesPanel({ notes, onAddNote, onMarkSeen, onMarkProcess
                   </button>
                 )}
                 {note.status === 'seen' && (
-                  <button
-                    onClick={() => onMarkProcessed(note.id)}
-                    className="px-3 py-1 text-xs bg-white border border-green-300 rounded hover:bg-green-50 transition-colors"
-                  >
-                    Mark Processed
-                  </button>
+                  <div className="flex-1">
+                    {processingNoteId === note.id ? (
+                      <div className="bg-white p-2 rounded border border-gray-300 animate-fadeIn">
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">Link Task (Optional):</label>
+                        <select
+                          value={selectedTaskId}
+                          onChange={(e) => setSelectedTaskId(e.target.value)}
+                          className="w-full text-xs border border-gray-300 rounded px-2 py-1 mb-2"
+                        >
+                          <option value="">-- No Linked Task --</option>
+                          {tasks.map(t => (
+                            <option key={t.id} value={t.task_id}>{t.task_id}: {t.title}</option>
+                          ))}
+                        </select>
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => setProcessingNoteId(null)}
+                            className="px-2 py-1 text-xs text-gray-500 hover:text-gray-700"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => handleProcessSubmit(note.id)}
+                            className="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600"
+                          >
+                            Confirm Processed
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setProcessingNoteId(note.id)
+                          setSelectedTaskId('')
+                        }}
+                        className="px-3 py-1 text-xs bg-white border border-green-300 rounded hover:bg-green-50 transition-colors"
+                      >
+                        Mark Processed
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

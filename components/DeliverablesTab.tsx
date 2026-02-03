@@ -7,9 +7,24 @@ interface DeliverablesTabProps {
   deliverables: Deliverable[]
 }
 
+import { supabase } from '@/lib/supabase'
+import { PlusIcon } from '@heroicons/react/24/outline'
+
+interface DeliverablesTabProps {
+  deliverables: Deliverable[]
+}
+
 export default function DeliverablesTab({ deliverables }: DeliverablesTabProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterType, setFilterType] = useState('all')
+
+  const [isAdding, setIsAdding] = useState(false)
+  const [newTitle, setNewTitle] = useState('')
+  const [newType, setNewType] = useState('document')
+  const [newUrl, setNewUrl] = useState('')
+  const [newFile, setNewFile] = useState<File | null>(null)
+  const [newRelatedTaskId, setNewRelatedTaskId] = useState('')
+  const [isUploading, setIsUploading] = useState(false)
 
   const filteredDeliverables = deliverables.filter((del) => {
     const matchesSearch = del.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -18,6 +33,59 @@ export default function DeliverablesTab({ deliverables }: DeliverablesTabProps) 
   })
 
   const uniqueTypes = Array.from(new Set(deliverables.map((d) => d.type)))
+
+  const handleAddDeliverable = async () => {
+    if (!newTitle.trim()) return
+
+    setIsUploading(true)
+    let filePath = null
+
+    try {
+      // 1. Upload File if present
+      if (newFile) {
+        const fileExt = newFile.name.split('.').pop()
+        const fileName = `${Math.random()}.${fileExt}`
+        const { error: uploadError, data } = await supabase.storage
+          .from('deliverables')
+          .upload(fileName, newFile)
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError)
+          alert('Failed to upload file. Ensure "deliverables" bucket exists.')
+          setIsUploading(false)
+          return
+        }
+        filePath = data?.path
+      }
+
+      // 2. Insert Record
+      const { error: insertError } = await supabase
+        .from('deliverables')
+        .insert({
+          title: newTitle,
+          type: newType,
+          file_path: filePath,
+          external_url: newUrl || null,
+          related_task_id: newRelatedTaskId || null
+        })
+
+      if (insertError) {
+        console.error('Insert error:', insertError)
+      } else {
+        // Reset form
+        setNewTitle('')
+        setNewType('document')
+        setNewUrl('')
+        setNewFile(null)
+        setNewRelatedTaskId('')
+        setIsAdding(false)
+      }
+    } catch (err) {
+      console.error('Unexpected error:', err)
+    } finally {
+      setIsUploading(false)
+    }
+  }
 
   return (
     <div className="card">
@@ -29,27 +97,101 @@ export default function DeliverablesTab({ deliverables }: DeliverablesTabProps) 
           <h2 className="text-xl font-bold text-ft-dark font-heading">Deliverables</h2>
         </div>
 
-        {/* Search & Filter */}
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          {/* Search & Filter */}
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search deliverables..."
-            className="input text-sm"
+            placeholder="Search..."
+            className="input text-sm w-32 sm:w-48"
           />
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className="px-3 py-2 border border-gray-200 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-ft-light"
+          <button
+            onClick={() => setIsAdding(!isAdding)}
+            className="p-1 rounded-full hover:bg-gray-100 text-ft-primary-light transition-colors"
+            title="Add Deliverable"
           >
-            <option value="all">All Types</option>
-            {uniqueTypes.map((type) => (
-              <option key={type} value={type}>{type}</option>
-            ))}
-          </select>
+            <PlusIcon className="w-6 h-6" />
+          </button>
         </div>
       </div>
+
+      {isAdding && (
+        <div className="mb-4 bg-gray-50 p-4 rounded-lg border border-gray-200 animate-fadeIn text-sm">
+          <h3 className="font-semibold text-gray-700 mb-3">New Deliverable</h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Title</label>
+              <input
+                type="text"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                className="w-full px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-ft-light"
+                placeholder="Report Name"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Type</label>
+              <select
+                value={newType}
+                onChange={(e) => setNewType(e.target.value)}
+                className="w-full px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-ft-light"
+              >
+                <option value="document">Document</option>
+                <option value="image">Image</option>
+                <option value="code">Code</option>
+                <option value="report">Report</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">File (Optional)</label>
+              <input
+                type="file"
+                onChange={(e) => setNewFile(e.target.files ? e.target.files[0] : null)}
+                className="w-full text-xs text-gray-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">External URL (Optional)</label>
+              <input
+                type="text"
+                value={newUrl}
+                onChange={(e) => setNewUrl(e.target.value)}
+                className="w-full px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-ft-light"
+                placeholder="https://..."
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1">Related Task ID (Optional)</label>
+              <input
+                type="text"
+                value={newRelatedTaskId}
+                onChange={(e) => setNewRelatedTaskId(e.target.value)}
+                className="w-full px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-ft-light"
+                placeholder="TASK-123"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => setIsAdding(false)}
+              className="px-3 py-1.5 text-xs text-gray-600 hover:text-gray-800"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAddDeliverable}
+              disabled={isUploading || !newTitle}
+              className="px-3 py-1.5 text-xs bg-ft-primary-light text-white rounded hover:bg-opacity-90 disabled:opacity-50"
+            >
+              {isUploading ? 'Uploading...' : 'Add Deliverable'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Deliverables List */}
       <div className="space-y-3 max-h-[520px] overflow-y-auto">
