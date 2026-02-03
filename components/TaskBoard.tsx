@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Task, TaskStatus, Priority } from '@/lib/types'
+import { ClipboardDocumentListIcon } from '@heroicons/react/24/outline'
 
 interface TaskBoardProps {
   tasks: Task[]
@@ -34,17 +35,24 @@ export default function TaskBoard({ tasks }: TaskBoardProps) {
     console.log('Move task', taskId, 'to', newStatus)
   }
 
+  const totalTasks = tasks.length
+
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-xl font-bold mb-4 text-ft-dark font-heading">
-        📋 Task Board
-      </h2>
+    <div className="card">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <ClipboardDocumentListIcon className="w-6 h-6 text-ft-dark" />
+          <h2 className="text-xl font-bold text-ft-dark font-heading">Task Board</h2>
+        </div>
+        <div className="text-sm text-gray-500">Total: <span className="font-mono">{totalTasks}</span></div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {statusColumns.map((column) => (
-          <div key={column.status} className="bg-gray-50 rounded-lg p-4 min-h-[400px]">
-            <h3 className="font-semibold mb-3 text-ft-dark pb-2 border-b-2 border-ft-light">
-              {column.label}
+          <div key={column.status} className="bg-gray-50 rounded-lg p-4 min-h-[380px]">
+            <h3 className="flex items-center justify-between font-semibold mb-3 text-ft-dark pb-2 border-b-2 border-ft-light">
+              <span>{column.label}</span>
+              <span className="text-xs text-gray-500">{tasks.filter((t) => t.status === column.status).length}</span>
             </h3>
 
             <div className="space-y-3">
@@ -61,10 +69,10 @@ export default function TaskBoard({ tasks }: TaskBoardProps) {
                       if (column.status === 'todo') moveTask(task.task_id, 'in_progress')
                       else if (column.status === 'in_progress') moveTask(task.task_id, 'done')
                     }}
-                    className={`cursor-move bg-white p-4 rounded-lg shadow-sm border-l-4 ${priorityColors[task.priority]} hover:shadow-md transition-shadow`}
+                    className={`relative cursor-move bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-transform transform hover:-translate-y-0.5`}
                   >
                     {/* Priority Badge */}
-                    <div className="text-xs font-bold uppercase mb-1">
+                    <div className={`absolute -left-1 top-4 px-2 py-0.5 text-xs font-semibold rounded-r-md ${priorityColors[task.priority]}`}>
                       {task.priority}
                     </div>
 
@@ -88,9 +96,7 @@ export default function TaskBoard({ tasks }: TaskBoardProps) {
                     {/* Origin + Timestamp */}
                     <div className="flex justify-between text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">
                       <span>{originLabels[task.origin] || task.origin}</span>
-                      <span>
-                        {new Date(task.created_at).toLocaleDateString()}
-                      </span>
+                      <span>{new Date(task.created_at).toLocaleDateString()}</span>
                     </div>
                   </div>
                 ))}

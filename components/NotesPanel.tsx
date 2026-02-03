@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Note } from '@/lib/types'
 
 interface NotesPanelProps {
@@ -33,10 +34,13 @@ export default function NotesPanel({ notes, onAddNote, onMarkSeen, onMarkProcess
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-xl font-bold mb-4 text-ft-dark font-heading">
-        💬 Notes (User → V3ktor Communication)
-      </h2>
+    <div className="card">
+      <div className="flex items-center gap-3 mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-ft-dark" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2H7l-5 3V5z" />
+        </svg>
+        <h2 className="text-xl font-bold text-ft-dark font-heading">Notes</h2>
+      </div>
 
       {/* Add New Note */}
       <form onSubmit={handleSubmit} className="mb-6">
@@ -44,22 +48,25 @@ export default function NotesPanel({ notes, onAddNote, onMarkSeen, onMarkProcess
           value={newNote}
           onChange={(e) => setNewNote(e.target.value)}
           placeholder="Add a note or instruction for V3ktor..."
-          className="w-full p-3 border border-ft-neutral rounded-lg min-h-[80px] focus:outline-none focus:ring-2 focus:ring-ft-light"
+          className="input min-h-[80px]"
           rows={3}
         />
         <button
           type="submit"
           disabled={!newNote.trim()}
-          className="mt-2 px-4 py-2 bg-ft-dark text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-ft-secondary-1 transition-colors"
+          className="mt-2 btn disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Add Note
         </button>
       </form>
 
       {/* Notes List */}
-      <div className="space-y-3 max-h-[500px] overflow-y-auto">
+      <div className="space-y-3 max-h-[420px] overflow-y-auto">
         {notes.length === 0 ? (
-          <p className="text-gray-500 italic">No notes yet.</p>
+          <div className="flex items-center gap-3 text-gray-500">
+            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">💬</div>
+            <p className="italic">No notes yet.</p>
+          </div>
         ) : (
           notes.map((note) => (
             <div key={note.id} className={`p-4 rounded-lg border-2 ${statusStyles[note.status]}`}>
