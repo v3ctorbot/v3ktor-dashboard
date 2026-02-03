@@ -190,6 +190,11 @@ const MODEL_PRICING = {
   'openai/gpt-4o': { input: 2.5, output: 10 },
   'openai/gpt-4-turbo': { input: 10, output: 30 },
   'zai/glm-4.7': { input: 0.5, output: 1.5 },
+  'deepseek/deepseek-chat': { input: 0.14, output: 0.28 },
+  'deepseek/deepseek-reasoner': { input: 0.55, output: 2.19 },
+  'google/gemini-pro': { input: 0.5, output: 1.5 },
+  'google/gemini-1.5-pro': { input: 1.25, output: 5 },
+  'google/gemini-2.0-flash': { input: 0.1, output: 0.4 },
   'default': { input: 1, output: 5 }
 }
 
