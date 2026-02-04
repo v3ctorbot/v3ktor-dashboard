@@ -13,9 +13,12 @@ const MODEL_INFO: Record<string, { name: string; tier: string; color: string }> 
   'anthropic/claude-sonnet-4': { name: 'Claude Sonnet', tier: '💰💰', color: 'text-blue-400' },
   'anthropic/claude-haiku': { name: 'Claude Haiku', tier: '💰', color: 'text-green-400' },
   'openai/gpt-4o': { name: 'GPT-4o', tier: '💰💰', color: 'text-purple-400' },
-  'zai/glm-4.7': { name: 'GLM-4.7', tier: '💰', color: 'text-cyan-400' },
+  'zai/glm-4.7': { name: 'GLM-4.7', tier: '💰💰', color: 'text-cyan-400' },
   'deepseek/deepseek-chat': { name: 'DeepSeek V3', tier: '💰', color: 'text-blue-500' },
-  'google/gemini-2.5-pro': { name: 'Gemini 2.5 Pro', tier: '💰', color: 'text-indigo-400' },
+  'google/gemini-pro': { name: 'Gemini Pro', tier: '💰', color: 'text-indigo-400' },
+  'google/gemini-1.5-pro': { name: 'Gemini 1.5 Pro', tier: '💰💰', color: 'text-indigo-400' },
+  'google/gemini-2.5-pro': { name: 'Gemini 2.5 Pro', tier: '💰💰', color: 'text-indigo-400' },
+  'google/gemini-2.0-flash': { name: 'Gemini 2.0 Flash', tier: '💰', color: 'text-indigo-400' },
   'google/gemini-3-pro-preview': { name: 'Gemini 3 Pro', tier: '💰💰', color: 'text-indigo-500' },
   'unknown': { name: 'Unknown', tier: '', color: 'text-gray-400' }
 }
