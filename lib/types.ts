@@ -53,6 +53,7 @@ export interface Status {
   operational_state: OperationalState
   current_task: string | null
   current_task_id: string | null
+  active_model?: string | null
   active_sub_agents: Array<{
     role: string
     assigned_task: string

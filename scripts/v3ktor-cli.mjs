@@ -48,7 +48,7 @@ async function logActivity(action, target, outcome, metadataJson) {
   console.log(JSON.stringify({ success: true, data }))
 }
 
-async function updateStatus(state, currentTask, taskId) {
+async function updateStatus(state, currentTask, taskId, activeModel) {
   // Get existing status row
   const { data: existing } = await supabase
     .from('status')
@@ -60,6 +60,7 @@ async function updateStatus(state, currentTask, taskId) {
     operational_state: state,
     current_task: currentTask || null,
     current_task_id: taskId || null,
+    active_model: activeModel || null,
     updated_at: new Date().toISOString()
   }
 
@@ -366,7 +367,8 @@ async function main() {
         if (args[1] === 'get') {
           await getStatus()
         } else {
-          await updateStatus(args[1], args[2], args[3])
+          // status <state> [current_task] [task_id] [active_model]
+          await updateStatus(args[1], args[2], args[3], args[4])
         }
         break
 
