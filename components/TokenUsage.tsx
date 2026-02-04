@@ -97,7 +97,7 @@ export default function TokenUsage({ usage }: TokenUsageProps) {
       </div>
 
       {/* Usage History */}
-      <div className="flex-1 space-y-2 overflow-y-auto pr-1 min-h-0">
+      <div className="flex-1 space-y-2 overflow-y-auto pr-1 min-h-0 max-h-[280px]">
         {usage.length === 0 ? (
           <div className="text-center py-6 text-gray-500 italic text-sm">No usage history.</div>
         ) : (
