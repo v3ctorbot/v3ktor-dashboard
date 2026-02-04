@@ -74,26 +74,26 @@ export default function StatusPanel({ state, currentTask, currentTaskId, activeS
 
       <div className="flex-1 flex flex-col justify-center">
         {/* State + Current Task in Same Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 items-center">
           {/* Operational State */}
-          <div className="flex flex-col gap-1">
-            <label className="text-xs text-klaus-muted uppercase tracking-wider font-semibold">State</label>
-            <div className={`px-3 py-1.5 rounded-md text-sm font-semibold text-center border ${stateColors[state]}`}>
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[10px] text-klaus-muted uppercase tracking-wider font-semibold">State</label>
+            <div className={`px-2 py-1 rounded-md text-xs font-semibold text-center border ${stateColors[state]}`}>
               {stateLabels[state]}
             </div>
           </div>
 
           {/* Current Primary Task (spans 3 cols) */}
-          <div className="flex flex-col gap-1 lg:col-span-3">
-            <label className="text-xs text-klaus-muted uppercase tracking-wider font-semibold">Current Task</label>
-            <div className="bg-klaus-bg border border-klaus-border px-3 py-1.5 rounded-md flex justify-between items-center text-sm min-h-[34px]">
+          <div className="flex flex-col gap-0.5 lg:col-span-3">
+            <label className="text-[10px] text-klaus-muted uppercase tracking-wider font-semibold">Current Task</label>
+            <div className="bg-klaus-bg border border-klaus-border px-2 py-1 rounded-md flex justify-between items-center text-xs min-h-[26px]">
               {currentTask ? (
                 <>
-                  <span className="font-medium text-gray-200 truncate mr-2">{currentTask}</span>
-                  {currentTaskId && <span className="text-xs text-gray-500 font-mono shrink-0">{currentTaskId}</span>}
+                  <span className="font-medium text-gray-200 truncate mr-2 text-xs">{currentTask}</span>
+                  {currentTaskId && <span className="text-[10px] text-gray-500 font-mono shrink-0">{currentTaskId}</span>}
                 </>
               ) : (
-                <span className="text-gray-500 italic">No active task</span>
+                <span className="text-gray-500 italic text-xs">No active task</span>
               )}
             </div>
           </div>
@@ -102,7 +102,7 @@ export default function StatusPanel({ state, currentTask, currentTaskId, activeS
 
       {/* Active Sub-Agents (Mini Footer) */}
       {activeSubAgents.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-klaus-border flex items-center gap-2 overflow-x-auto pb-1">
+        <div className="mt-2 pt-2 border-t border-klaus-border flex items-center gap-2 overflow-x-auto pb-1">
           <span className="text-xs text-klaus-muted shrink-0">Sub-Agents:</span>
           {activeSubAgents.map((agent, idx) => (
             <span key={idx} className="inline-flex items-center gap-1.5 bg-blue-500/10 text-blue-300 px-2 py-0.5 rounded text-xs border border-blue-500/30 shrink-0">
