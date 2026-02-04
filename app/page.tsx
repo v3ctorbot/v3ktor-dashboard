@@ -158,7 +158,6 @@ export default function Dashboard() {
                 currentTask={status.current_task}
                 currentTaskId={status.current_task_id}
                 activeSubAgents={status.active_sub_agents || []}
-                activeModel={status.active_model}
               />
             </div>
           )}

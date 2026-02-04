@@ -15,7 +15,7 @@ export default function Sidebar() {
             {/* Profile Section */}
             <div className="p-6 flex flex-col items-center border-b border-klaus-border/50">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-yellow-400 to-orange-500 flex items-center justify-center mb-3 shadow-lg ring-2 ring-klaus-border">
-                    <span className="text-2xl">😉</span>
+                    <span className="text-2xl">⚡</span>
                 </div>
                 <h2 className="text-klaus-text font-bold text-lg">V3ktor</h2>
                 <div className="flex items-center gap-2 mt-1">
