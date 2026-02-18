@@ -5,6 +5,22 @@ import { ChartBarIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline'
 
 interface TokenUsageProps {
   usage: TokenUsage[]
+  activeModel?: string | null
+}
+
+// Output/input cost multiplier per model
+const OUTPUT_MULTIPLIER: Record<string, number> = {
+  'anthropic/claude-opus-4-5': 5,
+  'anthropic/claude-sonnet-4': 5,
+  'anthropic/claude-haiku': 5,
+  'openai/gpt-4o': 4,
+  'openai/gpt-4-turbo': 3,
+  'zai/glm-4.7': 3,
+  'deepseek/deepseek-chat': 2,
+  'deepseek/deepseek-reasoner': 4,
+  'google/gemini-2.5-pro': 4,
+  'google/gemini-2.0-flash': 4,
+  'google/gemini-3-pro-preview': 4,
 }
 
 // Model display names and cost tiers
@@ -24,17 +40,18 @@ function getModelInfo(model: string) {
   return MODEL_INFO[model] || MODEL_INFO['unknown']
 }
 
-export default function TokenUsage({ usage }: TokenUsageProps) {
+export default function TokenUsage({ usage, activeModel }: TokenUsageProps) {
   // Calculate totals with new fields
   const totalInput = usage.reduce((sum, e) => sum + (e.input_tokens || 0), 0)
   const totalOutput = usage.reduce((sum, e) => sum + (e.output_tokens || 0), 0)
   const totalTokens = usage.reduce((sum, e) => sum + (e.tokens_used || 0), 0)
   const totalCost = usage.reduce((sum, e) => sum + (parseFloat(String(e.estimated_cost)) || 0), 0)
-  
-  // Get latest model info
+
+  // Active model: prefer status.active_model, fall back to latest token log entry
   const latestEntry = usage[0]
-  const currentModel = latestEntry?.model || 'unknown'
+  const currentModel = activeModel ?? latestEntry?.model ?? 'unknown'
   const modelInfo = getModelInfo(currentModel)
+  const outputMultiplier = OUTPUT_MULTIPLIER[currentModel] ?? 5
 
   return (
     <div className="card h-full flex flex-col">
@@ -92,7 +109,7 @@ export default function TokenUsage({ usage }: TokenUsageProps) {
         </div>
         <div className="bg-klaus-bg border border-klaus-border p-2 rounded-lg text-center">
           <div className="text-lg font-bold text-orange-400">{totalOutput.toLocaleString()}</div>
-          <div className="text-[9px] text-klaus-muted uppercase tracking-wider">Output (5x cost)</div>
+          <div className="text-[9px] text-klaus-muted uppercase tracking-wider">Output ({outputMultiplier}x cost)</div>
         </div>
       </div>
 

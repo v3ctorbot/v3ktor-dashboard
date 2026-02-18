@@ -86,3 +86,8 @@ export interface Goal {
   created_at: string
   updated_at: string
 }
+
+export type ModelName = 'glm-4.7' | 'glm-4.7-flash' | 'llama-4'
+export type ModelConfig = Record<ModelName, { name: string; type: 'strategic' | 'creative' | 'research' | 'coding' | 'realtime' | 'vision' }>
+export type Provider = 'zai' | 'openai' | 'meta' | 'google' | 'modal' | 'ollama'
+

@@ -164,7 +164,7 @@ export default function Dashboard() {
         </div>
         <div className="col-span-12 lg:col-span-4 xl:col-span-3">
           <div className="h-full">
-            <TokenUsageComponent usage={tokenUsage} />
+            <TokenUsageComponent usage={tokenUsage} activeModel={status?.active_model} />
           </div>
         </div>
 
