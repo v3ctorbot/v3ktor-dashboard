@@ -10,7 +10,9 @@ interface TokenUsageProps {
 
 // Output/input cost multiplier per model
 const OUTPUT_MULTIPLIER: Record<string, number> = {
+  'anthropic/claude-opus-4-6': 5,
   'anthropic/claude-opus-4-5': 5,
+  'anthropic/claude-sonnet-4-6': 5,
   'anthropic/claude-sonnet-4': 5,
   'anthropic/claude-haiku': 5,
   'openai/gpt-4o': 4,
@@ -18,20 +20,22 @@ const OUTPUT_MULTIPLIER: Record<string, number> = {
   'zai/glm-4.7': 3,
   'deepseek/deepseek-chat': 2,
   'deepseek/deepseek-reasoner': 4,
-  'google/gemini-2.5-pro': 4,
+  'google/gemini-2.5-pro': 8,
   'google/gemini-2.0-flash': 4,
   'google/gemini-3-pro-preview': 4,
 }
 
 // Model display names and cost tiers
 const MODEL_INFO: Record<string, { name: string; tier: string; color: string }> = {
-  'anthropic/claude-opus-4-5': { name: 'Claude Opus', tier: '💰💰💰', color: 'text-amber-400' },
+  'anthropic/claude-opus-4-6': { name: 'Claude Opus 4.6', tier: '💰💰💰💰', color: 'text-amber-300' },
+  'anthropic/claude-opus-4-5': { name: 'Claude Opus 4.5', tier: '💰💰💰', color: 'text-amber-400' },
+  'anthropic/claude-sonnet-4-6': { name: 'Claude Sonnet 4.6', tier: '💰💰', color: 'text-blue-400' },
   'anthropic/claude-sonnet-4': { name: 'Claude Sonnet', tier: '💰💰', color: 'text-blue-400' },
   'anthropic/claude-haiku': { name: 'Claude Haiku', tier: '💰', color: 'text-green-400' },
   'openai/gpt-4o': { name: 'GPT-4o', tier: '💰💰', color: 'text-purple-400' },
   'zai/glm-4.7': { name: 'GLM-4.7', tier: '💰', color: 'text-cyan-400' },
   'deepseek/deepseek-chat': { name: 'DeepSeek V3', tier: '💰', color: 'text-blue-500' },
-  'google/gemini-2.5-pro': { name: 'Gemini 2.5 Pro', tier: '💰', color: 'text-indigo-400' },
+  'google/gemini-2.5-pro': { name: 'Gemini 2.5 Pro', tier: '💰💰', color: 'text-indigo-400' },
   'google/gemini-3-pro-preview': { name: 'Gemini 3 Pro', tier: '💰💰', color: 'text-indigo-500' },
   'unknown': { name: 'Unknown', tier: '', color: 'text-gray-400' }
 }
