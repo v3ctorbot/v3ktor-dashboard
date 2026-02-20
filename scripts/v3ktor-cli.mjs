@@ -185,7 +185,7 @@ async function createDeliverable(title, type, filePath, externalUrl, taskId) {
 
 // Model pricing per million tokens (USD)
 const MODEL_PRICING = {
-  'anthropic/claude-opus-4-6': { input: 15, output: 75 },
+  'anthropic/claude-opus-4-6': { input: 5, output: 25 },
   'anthropic/claude-opus-4-5': { input: 5, output: 25 },
   'anthropic/claude-sonnet-4-6': { input: 3, output: 15 },
   'anthropic/claude-sonnet-4': { input: 3, output: 15 },

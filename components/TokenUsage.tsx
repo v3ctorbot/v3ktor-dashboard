@@ -27,7 +27,7 @@ const OUTPUT_MULTIPLIER: Record<string, number> = {
 
 // Model display names and cost tiers
 const MODEL_INFO: Record<string, { name: string; tier: string; color: string }> = {
-  'anthropic/claude-opus-4-6': { name: 'Claude Opus 4.6', tier: '💰💰💰💰', color: 'text-amber-300' },
+  'anthropic/claude-opus-4-6': { name: 'Claude Opus 4.6', tier: '💰💰💰', color: 'text-amber-300' },
   'anthropic/claude-opus-4-5': { name: 'Claude Opus 4.5', tier: '💰💰💰', color: 'text-amber-400' },
   'anthropic/claude-sonnet-4-6': { name: 'Claude Sonnet 4.6', tier: '💰💰', color: 'text-blue-400' },
   'anthropic/claude-sonnet-4': { name: 'Claude Sonnet', tier: '💰💰', color: 'text-blue-400' },
