@@ -2,11 +2,13 @@
 
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Task, TaskStatus, Priority } from '@/lib/types'
+import { Task, TaskStatus, Priority, ActivityLogEntry } from '@/lib/types'
 import { ClipboardDocumentListIcon } from '@heroicons/react/24/outline'
+import TaskDrawer from '@/components/TaskDrawer'
 
 interface TaskBoardProps {
   tasks: Task[]
+  activityLog: ActivityLogEntry[]
 }
 
 const statusColumns: { status: TaskStatus, label: string }[] = [
@@ -30,7 +32,7 @@ const originLabels: Record<string, string> = {
 
 import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline'
 
-export default function TaskBoard({ tasks }: TaskBoardProps) {
+export default function TaskBoard({ tasks, activityLog }: TaskBoardProps) {
   const [draggedTask, setDraggedTask] = useState<string | null>(null)
   const [dragOverCol, setDragOverCol] = useState<TaskStatus | null>(null)
 
@@ -40,6 +42,8 @@ export default function TaskBoard({ tasks }: TaskBoardProps) {
 
   const [filterPriority, setFilterPriority] = useState<Priority | 'all'>('all')
   const [filterOrigin, setFilterOrigin] = useState<string>('all')
+
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
 
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
     e.dataTransfer.setData('taskId', taskId)
@@ -260,7 +264,11 @@ export default function TaskBoard({ tasks }: TaskBoardProps) {
                         {(task.origin === 'v3ktor' || task.origin === 'sub_agent') && <span className="text-[10px] text-ft-light">SYS</span>}
                       </div>
 
-                      <p className="text-sm font-medium text-gray-200 mb-2 leading-tight">
+                      <p
+                        className="text-sm font-medium text-gray-200 mb-2 leading-tight hover:text-ft-light cursor-pointer transition-colors"
+                        onClick={() => setSelectedTask(task)}
+                        title="Click to view activity timeline"
+                      >
                         {task.title}
                       </p>
 
@@ -284,6 +292,14 @@ export default function TaskBoard({ tasks }: TaskBoardProps) {
           )
         })}
       </div>
+
+      {selectedTask && (
+        <TaskDrawer
+          task={selectedTask}
+          logs={activityLog}
+          onClose={() => setSelectedTask(null)}
+        />
+      )}
     </div>
   )
 }

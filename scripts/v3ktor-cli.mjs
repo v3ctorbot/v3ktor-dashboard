@@ -17,6 +17,9 @@
  *   node scripts/v3ktor-cli.mjs deliverable <title> <type> [file_path] [external_url] [task_id]
  *   node scripts/v3ktor-cli.mjs tokens <session_id> <input_tokens> <output_tokens> [model] [context_used] [context_max]
  *   node scripts/v3ktor-cli.mjs goal <create|update|list> ...
+ *   node scripts/v3ktor-cli.mjs briefing create <type> <title> <content> [task_id]
+ *   node scripts/v3ktor-cli.mjs briefing latest [type]
+ *   node scripts/v3ktor-cli.mjs briefing read <id>
  *   node scripts/v3ktor-cli.mjs summary <day|week|month>
  */
 
@@ -333,6 +336,62 @@ async function listGoals(status) {
 }
 
 // ============================================
+// BRIEFINGS
+// ============================================
+
+async function createBriefing(type, title, content, relatedTaskId) {
+  const validTypes = ['daily_brief', 'ops_alert', 'needs_decision', 'weekly_summary']
+  if (!validTypes.includes(type)) {
+    throw new Error(`Invalid type. Must be one of: ${validTypes.join(', ')}`)
+  }
+
+  const { data, error } = await supabase
+    .from('briefings')
+    .insert({
+      type,
+      title,
+      content,
+      source: 'v3ktor',
+      status: 'unread',
+      related_task_id: relatedTaskId || null,
+      date: new Date().toISOString().split('T')[0],
+      created_at: new Date().toISOString()
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  console.log(JSON.stringify({ success: true, data }))
+}
+
+async function latestBriefings(type) {
+  let query = supabase
+    .from('briefings')
+    .select('*')
+    .neq('status', 'archived')
+    .order('created_at', { ascending: false })
+    .limit(10)
+
+  if (type) query = query.eq('type', type)
+
+  const { data, error } = await query
+  if (error) throw error
+  console.log(JSON.stringify({ success: true, data }))
+}
+
+async function markBriefingRead(id) {
+  const { data, error } = await supabase
+    .from('briefings')
+    .update({ status: 'read' })
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  console.log(JSON.stringify({ success: true, data }))
+}
+
+// ============================================
 // TOKEN SUMMARY
 // ============================================
 
@@ -442,6 +501,16 @@ async function main() {
         }
         break
 
+      case 'briefing':
+        if (args[1] === 'create') {
+          await createBriefing(args[2], args[3], args[4], args[5])
+        } else if (args[1] === 'latest') {
+          await latestBriefings(args[2])
+        } else if (args[1] === 'read') {
+          await markBriefingRead(args[2])
+        }
+        break
+
       case 'heartbeat':
         await heartbeat()
         break
@@ -457,6 +526,7 @@ async function main() {
           usage: {
             log: 'log <action> [target] [outcome] [metadata_json]',
             status: 'status <state|get> [current_task] [task_id] [active_model]',
+            briefing: 'briefing <create|latest|read> ...',
             heartbeat: 'heartbeat  (lightweight ping — updates updated_at only)',
             task: 'task <create|update|list> ...',
             notes: 'notes <unseen|seen|processed> ...',

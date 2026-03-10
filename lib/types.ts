@@ -87,6 +87,21 @@ export interface Goal {
   updated_at: string
 }
 
+export type BriefingType = 'daily_brief' | 'ops_alert' | 'needs_decision' | 'weekly_summary'
+export type BriefingStatus = 'unread' | 'read' | 'archived'
+
+export interface Briefing {
+  id: string
+  date: string
+  type: BriefingType
+  title: string
+  content: string
+  source: string
+  status: BriefingStatus
+  related_task_id: string | null
+  created_at: string
+}
+
 export type ModelName = 'glm-4.7' | 'glm-4.7-flash' | 'llama-4'
 export type ModelConfig = Record<ModelName, { name: string; type: 'strategic' | 'creative' | 'research' | 'coding' | 'realtime' | 'vision' }>
 export type Provider = 'zai' | 'openai' | 'meta' | 'google' | 'modal' | 'ollama'

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Task, ActivityLogEntry, Note, Deliverable, Status, TokenUsage, Goal, TaskStatus, NoteStatus } from '@/lib/types'
+import { Task, ActivityLogEntry, Note, Deliverable, Status, TokenUsage, Goal, Briefing, TaskStatus, NoteStatus } from '@/lib/types'
 import StatusPanel from '@/components/StatusPanel'
 import TaskBoard from '@/components/TaskBoard'
 import ActivityLog from '@/components/ActivityLog'
@@ -10,6 +10,7 @@ import NotesPanel from '@/components/NotesPanel'
 import DeliverablesTab from '@/components/DeliverablesTab'
 import TokenUsageComponent from '@/components/TokenUsage'
 import GoalsPanel from '@/components/GoalsPanel'
+import BriefingPanel from '@/components/BriefingPanel'
 
 export default function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([])
@@ -19,6 +20,7 @@ export default function Dashboard() {
   const [status, setStatus] = useState<Status | null>(null)
   const [tokenUsage, setTokenUsage] = useState<TokenUsage[]>([])
   const [goals, setGoals] = useState<Goal[]>([])
+  const [briefings, setBriefings] = useState<Briefing[]>([])
 
   useEffect(() => {
     // Initial data fetch
@@ -90,6 +92,17 @@ export default function Dashboard() {
       })
       .subscribe()
 
+    const briefingsSubscription = supabase
+      .channel('briefings-channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'briefings' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setBriefings((prev) => [payload.new as Briefing, ...prev])
+        } else if (payload.eventType === 'UPDATE') {
+          setBriefings((prev) => prev.map((b) => (b.id === payload.new.id ? payload.new as Briefing : b)))
+        }
+      })
+      .subscribe()
+
     const goalsSubscription = supabase
       .channel('goals-channel')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'goals' }, (payload) => {
@@ -111,19 +124,21 @@ export default function Dashboard() {
       deliverablesSubscription.unsubscribe()
       tokenSubscription.unsubscribe()
       goalsSubscription.unsubscribe()
+      briefingsSubscription.unsubscribe()
       if (typeof window !== 'undefined') window.removeEventListener('v3ktor:refresh', handleRefreshEvent)
     }
   }, [])
 
   const fetchAllData = async () => {
-    const [tasksRes, activityRes, notesRes, statusRes, deliverablesRes, tokenRes, goalsRes] = await Promise.all([
+    const [tasksRes, activityRes, notesRes, statusRes, deliverablesRes, tokenRes, goalsRes, briefingsRes] = await Promise.all([
       supabase.from('tasks').select('*').order('created_at', { ascending: false }),
       supabase.from('activity_log').select('*').order('timestamp', { ascending: false }),
       supabase.from('notes').select('*').order('created_at', { ascending: false }),
       supabase.from('status').select('*').single(),
       supabase.from('deliverables').select('*').order('created_at', { ascending: false }),
       supabase.from('token_usage').select('*').order('timestamp', { ascending: false }),
-      supabase.from('goals').select('*').order('created_at', { ascending: false })
+      supabase.from('goals').select('*').order('created_at', { ascending: false }),
+      supabase.from('briefings').select('*').neq('status', 'archived').order('created_at', { ascending: false })
     ])
 
     if (tasksRes.data) setTasks(tasksRes.data)
@@ -132,6 +147,7 @@ export default function Dashboard() {
     if (deliverablesRes.data) setDeliverables(deliverablesRes.data)
     if (tokenRes.data) setTokenUsage(tokenRes.data)
     if (goalsRes.data) setGoals(goalsRes.data)
+    if (briefingsRes.data) setBriefings(briefingsRes.data)
 
     // Handle Status (Initialize if missing)
     if (statusRes.data) {
@@ -196,7 +212,7 @@ export default function Dashboard() {
         {/* ROW 2: Main Workspace (Tasks & Activity) */}
         <div className="col-span-12 lg:col-span-8">
           <div className="h-[700px] flex flex-col">
-            <TaskBoard tasks={tasks} />
+            <TaskBoard tasks={tasks} activityLog={activityLog} />
           </div>
         </div>
         <div className="col-span-12 lg:col-span-4">
@@ -210,7 +226,12 @@ export default function Dashboard() {
           <GoalsPanel goals={goals} />
         </div>
 
-        {/* ROW 4: Tools (Communication & Artifacts) */}
+        {/* ROW 4: Ops Brief */}
+        <div className="col-span-12">
+          <BriefingPanel briefings={briefings} />
+        </div>
+
+        {/* ROW 5: Tools (Communication & Artifacts) */}
         <div className="col-span-12 lg:col-span-6">
           <div className="h-full">
             <NotesPanel
