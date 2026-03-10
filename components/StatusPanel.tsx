@@ -8,145 +8,141 @@ interface StatusPanelProps {
   currentTask: string | null
   currentTaskId: string | null
   lastSeen: string | null
-  activeSubAgents: Array<{
-    role: string
-    assigned_task: string
-    status: string
-  }>
+  activeModel: string | null | undefined
+  activeSubAgents: Array<{ role: string; assigned_task: string; status: string }>
 }
 
 type HealthLevel = 'healthy' | 'stale' | 'dead'
 
 function getHealth(lastSeen: string | null): { level: HealthLevel; label: string; age: string } {
-  if (!lastSeen) return { level: 'dead', label: 'Unknown', age: '—' }
+  if (!lastSeen) return { level: 'dead', label: 'Offline', age: '—' }
   const minutesAgo = (Date.now() - new Date(lastSeen).getTime()) / 60000
   if (minutesAgo < 10) return { level: 'healthy', label: 'Live', age: `${Math.floor(minutesAgo)}m ago` }
   if (minutesAgo < 30) return { level: 'stale', label: 'Stale', age: `${Math.floor(minutesAgo)}m ago` }
-  const hoursAgo = minutesAgo / 60
-  const age = hoursAgo >= 1 ? `${Math.floor(hoursAgo)}h ago` : `${Math.floor(minutesAgo)}m ago`
-  return { level: 'dead', label: 'Offline', age }
+  const h = Math.floor(minutesAgo / 60)
+  return { level: 'dead', label: 'Offline', age: h >= 1 ? `${h}h ago` : `${Math.floor(minutesAgo)}m ago` }
 }
 
-export default function StatusPanel({ state, currentTask, currentTaskId, lastSeen, activeSubAgents }: StatusPanelProps) {
-  const [time, setTime] = useState<string>('')
+const stateStyles: Record<OperationalState, { bg: string; text: string; dot: string; label: string }> = {
+  working: { bg: 'bg-green-500/15 border-green-500/40',  text: 'text-green-300',  dot: 'bg-green-400 animate-pulse', label: 'Working'  },
+  idle:    { bg: 'bg-yellow-500/15 border-yellow-500/40', text: 'text-yellow-300', dot: 'bg-yellow-400',              label: 'Idle'     },
+  waiting: { bg: 'bg-blue-500/15 border-blue-500/40',    text: 'text-blue-300',   dot: 'bg-blue-400 animate-pulse',  label: 'Waiting'  },
+  offline: { bg: 'bg-red-500/15 border-red-500/40',      text: 'text-red-300',    dot: 'bg-red-500',                 label: 'Offline'  },
+}
+
+const MODEL_SHORT: Record<string, string> = {
+  'anthropic/claude-sonnet-4-6': 'Sonnet 4.6',
+  'anthropic/claude-opus-4-6':   'Opus 4.6',
+  'anthropic/claude-opus-4-5':   'Opus 4.5',
+  'anthropic/claude-haiku':      'Haiku',
+  'google/gemini-2.5-pro':       'Gemini 2.5 Pro',
+  'google/gemini-2.0-flash':     'Gemini Flash',
+  'openai/gpt-4o':               'GPT-4o',
+  'deepseek/deepseek-chat':      'DeepSeek V3',
+}
+
+export default function StatusPanel({
+  state, currentTask, currentTaskId, lastSeen, activeModel, activeSubAgents,
+}: StatusPanelProps) {
+  const [time, setTime] = useState('')
   const [health, setHealth] = useState(() => getHealth(lastSeen))
 
   useEffect(() => {
-    setTime(new Date().toLocaleTimeString())
-    const interval = setInterval(() => setTime(new Date().toLocaleTimeString()), 1000)
-    return () => clearInterval(interval)
+    const tick = () => setTime(new Date().toLocaleTimeString())
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
   }, [])
 
   useEffect(() => {
     setHealth(getHealth(lastSeen))
-    const interval = setInterval(() => setHealth(getHealth(lastSeen)), 60000)
-    return () => clearInterval(interval)
+    const id = setInterval(() => setHealth(getHealth(lastSeen)), 30000)
+    return () => clearInterval(id)
   }, [lastSeen])
 
-  const healthColors: Record<HealthLevel, string> = {
-    healthy: 'bg-green-500',
-    stale: 'bg-yellow-400',
-    dead: 'bg-red-500',
-  }
+  const healthDot: Record<HealthLevel, string> = { healthy: 'bg-green-400 animate-pulse', stale: 'bg-yellow-400', dead: 'bg-red-500' }
+  const healthText: Record<HealthLevel, string> = { healthy: 'text-green-400', stale: 'text-yellow-400', dead: 'text-red-400' }
 
-  const healthTextColors: Record<HealthLevel, string> = {
-    healthy: 'text-green-400',
-    stale: 'text-yellow-400',
-    dead: 'text-red-400',
-  }
-
-  const stateColors = {
-    working: 'bg-green-500/20 text-green-300 border-green-500/50',
-    idle: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50',
-    waiting: 'bg-blue-500/20 text-blue-300 border-blue-500/50',
-    offline: 'bg-red-500/20 text-red-300 border-red-500/50',
-  }
-
-  const stateLabels = {
-    working: '🟢 Working',
-    idle: '🟡 Idle',
-    waiting: '🔵 Waiting for Input',
-    offline: '🔴 Offline / Paused',
-  }
+  const ss = stateStyles[state]
+  const modelName = activeModel ? (MODEL_SHORT[activeModel] ?? activeModel.split('/').pop()) : null
 
   return (
-    <div className="card h-full flex flex-col justify-between">
-      <div className="flex items-center justify-between mb-2">
-        {/* V3ktor Logo with Lightning Bolt */}
+    <div className="card h-full flex flex-col gap-3">
+      {/* Row 1: Identity + health + clock */}
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="relative w-10 h-10 flex items-center justify-center">
-            {/* Lightning Bolt ⚡ */}
-            <svg viewBox="0 0 100 100" className="w-8 h-8">
-              <defs>
-                <linearGradient id="bolt-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#F59E0B" />
-                  <stop offset="100%" stopColor="#FBBF24" />
-                </linearGradient>
-              </defs>
-              <polygon
-                points="50,5 25,45 45,45 35,75 65,50 50,50 75,45 50,5"
-                fill="url(#bolt-gradient)"
-                stroke="#FFFFFF"
-                strokeWidth="2"
-              />
-              {/* Glow effect */}
-              <polygon
-                points="50,8 27,43 45,43 36,72 62,49 50,49 73,45 50,8"
-                fill="#FBBF24"
-                opacity="0.3"
-              />
-            </svg>
-          </div>
-          <div>
-            <h2 className="text-xl font-bold font-heading text-white">V3ktor</h2>
-          </div>
+          <svg viewBox="0 0 100 100" className="w-7 h-7 shrink-0">
+            <defs>
+              <linearGradient id="bolt2" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#F59E0B" />
+                <stop offset="100%" stopColor="#FBBF24" />
+              </linearGradient>
+            </defs>
+            <polygon points="50,5 25,45 45,45 35,75 65,50 50,50 75,45 50,5" fill="url(#bolt2)" stroke="#fff" strokeWidth="2" />
+          </svg>
+          <span className="text-lg font-bold font-heading text-white">V3ktor</span>
         </div>
+
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 bg-klaus-bg px-2 py-1 rounded border border-klaus-border">
-            <span className={`w-1.5 h-1.5 rounded-full ${healthColors[health.level]} ${health.level === 'healthy' ? 'animate-pulse' : ''}`} />
-            <span className={`text-[10px] font-semibold ${healthTextColors[health.level]}`}>{health.label}</span>
-            <span className="text-[10px] text-klaus-muted">{health.age}</span>
+          {/* Health */}
+          <div className="flex items-center gap-1.5 bg-klaus-bg border border-klaus-border px-2.5 py-1 rounded-lg">
+            <span className={`w-1.5 h-1.5 rounded-full ${healthDot[health.level]}`} />
+            <span className={`text-[11px] font-semibold ${healthText[health.level]}`}>{health.label}</span>
+            <span className="text-[11px] text-klaus-muted">{health.age}</span>
           </div>
-          <div className="text-xs text-klaus-muted font-mono bg-klaus-bg px-2 py-1 rounded border border-klaus-border">{time}</div>
+          {/* Clock */}
+          <div className="text-xs text-klaus-muted font-mono bg-klaus-bg border border-klaus-border px-2.5 py-1 rounded-lg">{time}</div>
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col justify-center">
-        {/* State + Current Task in Same Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 items-center">
-          {/* Operational State */}
-          <div className="flex flex-col gap-0.5">
-            <label className="text-[10px] text-klaus-muted uppercase tracking-wider font-semibold">State</label>
-            <div className={`px-2 py-1 rounded-md text-xs font-semibold text-center border ${stateColors[state]}`}>
-              {stateLabels[state]}
-            </div>
+      {/* Row 2: State + Task + Model */}
+      <div className="grid grid-cols-12 gap-3 flex-1">
+        {/* State */}
+        <div className="col-span-3 flex flex-col gap-1.5">
+          <label className="text-[10px] text-klaus-muted uppercase tracking-wider font-semibold">State</label>
+          <div className={`flex-1 flex items-center justify-center gap-2 rounded-lg border px-3 py-2 ${ss.bg}`}>
+            <span className={`w-2 h-2 rounded-full ${ss.dot}`} />
+            <span className={`text-sm font-bold ${ss.text}`}>{ss.label}</span>
           </div>
+        </div>
 
-          {/* Current Primary Task (spans 3 cols) */}
-          <div className="flex flex-col gap-0.5 lg:col-span-3">
-            <label className="text-[10px] text-klaus-muted uppercase tracking-wider font-semibold">Current Task</label>
-            <div className="bg-klaus-bg border border-klaus-border px-2 py-1 rounded-md flex justify-between items-center text-xs min-h-[26px]">
-              {currentTask ? (
-                <>
-                  <span className="font-medium text-gray-200 truncate mr-2 text-xs">{currentTask}</span>
-                  {currentTaskId && <span className="text-[10px] text-gray-500 font-mono shrink-0">{currentTaskId}</span>}
-                </>
-              ) : (
-                <span className="text-gray-500 italic text-xs">No active task</span>
-              )}
-            </div>
+        {/* Current Task */}
+        <div className="col-span-6 flex flex-col gap-1.5">
+          <label className="text-[10px] text-klaus-muted uppercase tracking-wider font-semibold">Current Task</label>
+          <div className="flex-1 flex items-center bg-klaus-bg border border-klaus-border rounded-lg px-3 py-2 min-h-[42px]">
+            {currentTask ? (
+              <div className="flex items-center justify-between w-full gap-2">
+                <span className="text-sm font-medium text-gray-200 truncate">{currentTask}</span>
+                {currentTaskId && <span className="text-[10px] text-gray-500 font-mono shrink-0">{currentTaskId}</span>}
+              </div>
+            ) : (
+              <span className="text-sm text-gray-500 italic">No active task</span>
+            )}
+          </div>
+        </div>
+
+        {/* Active Model */}
+        <div className="col-span-3 flex flex-col gap-1.5">
+          <label className="text-[10px] text-klaus-muted uppercase tracking-wider font-semibold">Model</label>
+          <div className="flex-1 flex items-center bg-klaus-bg border border-klaus-border rounded-lg px-3 py-2 min-h-[42px]">
+            {modelName ? (
+              <span className="text-xs font-semibold text-ft-light truncate">{modelName}</span>
+            ) : (
+              <span className="text-xs text-gray-600 italic">—</span>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Active Sub-Agents (Mini Footer) */}
+      {/* Row 3: Sub-agents (only if active) */}
       {activeSubAgents.length > 0 && (
-        <div className="mt-2 pt-2 border-t border-klaus-border flex items-center gap-2 overflow-x-auto pb-1">
-          <span className="text-xs text-klaus-muted shrink-0">Sub-Agents:</span>
-          {activeSubAgents.map((agent, idx) => (
-            <span key={idx} className="inline-flex items-center gap-1.5 bg-blue-500/10 text-blue-300 px-2 py-0.5 rounded text-xs border border-blue-500/30 shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
-              {agent.role}
+        <div className="flex items-center gap-2 pt-2 border-t border-klaus-border overflow-x-auto">
+          <span className="text-[10px] text-klaus-muted shrink-0 uppercase tracking-wider">Sub-agents</span>
+          {activeSubAgents.map((a, i) => (
+            <span key={i} className="inline-flex items-center gap-1.5 bg-blue-500/10 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded text-xs shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+              {a.role}
+              {a.assigned_task && <span className="text-blue-400/60 text-[10px]">· {a.assigned_task}</span>}
             </span>
           ))}
         </div>
