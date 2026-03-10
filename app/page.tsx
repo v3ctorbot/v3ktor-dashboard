@@ -41,6 +41,7 @@ export default function Dashboard() {
           })
         }
       })
+      .subscribe()
 
     const activitySubscription = supabase
       .channel('activity-channel')
@@ -49,6 +50,7 @@ export default function Dashboard() {
           setActivityLog((prev) => [payload.new as ActivityLogEntry, ...prev])
         }
       })
+      .subscribe()
 
     const notesSubscription = supabase
       .channel('notes-channel')
@@ -59,6 +61,7 @@ export default function Dashboard() {
           setNotes((prev) => prev.map((n) => (n.id === payload.new.id ? payload.new as Note : n)))
         }
       })
+      .subscribe()
 
     const statusSubscription = supabase
       .channel('status-channel')
@@ -67,6 +70,7 @@ export default function Dashboard() {
           setStatus(payload.new as Status)
         }
       })
+      .subscribe()
 
     const deliverablesSubscription = supabase
       .channel('deliverables-channel')
@@ -75,6 +79,7 @@ export default function Dashboard() {
           setDeliverables((prev) => [payload.new as Deliverable, ...prev])
         }
       })
+      .subscribe()
 
     const tokenSubscription = supabase
       .channel('tokens-channel')
@@ -83,6 +88,7 @@ export default function Dashboard() {
           setTokenUsage((prev) => [payload.new as TokenUsage, ...prev])
         }
       })
+      .subscribe()
 
     const goalsSubscription = supabase
       .channel('goals-channel')
@@ -95,6 +101,7 @@ export default function Dashboard() {
           setGoals((prev) => prev.filter((g) => g.id !== payload.old.id))
         }
       })
+      .subscribe()
 
     return () => {
       tasksSubscription.unsubscribe()
