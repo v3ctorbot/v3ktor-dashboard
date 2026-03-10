@@ -1,7 +1,9 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { HomeIcon, DocumentTextIcon, ClockIcon, ArrowLeftOnRectangleIcon, FlagIcon } from '@heroicons/react/24/outline'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { HomeIcon, DocumentTextIcon, ClockIcon, ArrowLeftOnRectangleIcon, FlagIcon, InboxIcon } from '@heroicons/react/24/outline'
 import { supabase } from '@/lib/supabase'
 
 type HealthLevel = 'healthy' | 'stale' | 'dead'
@@ -32,9 +34,19 @@ const healthText: Record<HealthLevel, string> = {
   dead: 'text-red-400',
 }
 
+const menuItems = [
+  { name: 'Dashboard', href: '/', icon: HomeIcon },
+  { name: 'Inbox', href: '/inbox', icon: InboxIcon, alertKey: 'inbox' },
+  { name: 'Goals', href: '/goals', icon: FlagIcon },
+  { name: 'Log', href: '/log', icon: ClockIcon },
+  { name: 'Docs', href: '/docs', icon: DocumentTextIcon },
+]
+
 export default function Sidebar() {
+  const pathname = usePathname()
   const [health, setHealth] = useState<HealthLevel>('dead')
   const [updatedAt, setUpdatedAt] = useState<string | null>(null)
+  const [inboxCount, setInboxCount] = useState(0)
 
   useEffect(() => {
     supabase.from('status').select('updated_at').limit(1).single().then(({ data }) => {
@@ -44,7 +56,15 @@ export default function Sidebar() {
       }
     })
 
-    const sub = supabase
+    // Count unread inbox items (unseen notes + unread needs_decision briefings)
+    Promise.all([
+      supabase.from('notes').select('id', { count: 'exact', head: true }).eq('status', 'unseen'),
+      supabase.from('briefings').select('id', { count: 'exact', head: true }).eq('status', 'unread').eq('type', 'needs_decision'),
+    ]).then(([notes, briefings]) => {
+      setInboxCount((notes.count || 0) + (briefings.count || 0))
+    }).catch(() => setInboxCount(0))
+
+    const statusSub = supabase
       .channel('sidebar-status')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'status' }, (payload) => {
         const at = payload.new.updated_at
@@ -53,22 +73,13 @@ export default function Sidebar() {
       })
       .subscribe()
 
-    const interval = setInterval(() => {
-      setHealth(getHealth(updatedAt))
-    }, 60000)
+    const interval = setInterval(() => setHealth(getHealth(updatedAt)), 60000)
 
     return () => {
-      sub.unsubscribe()
+      statusSub.unsubscribe()
       clearInterval(interval)
     }
   }, [updatedAt])
-
-  const menuItems = [
-    { name: 'Dashboard', icon: HomeIcon, active: true },
-    { name: 'Goals', icon: FlagIcon, active: false },
-    { name: 'Docs', icon: DocumentTextIcon, active: false },
-    { name: 'Log', icon: ClockIcon, active: false },
-  ]
 
   return (
     <div className="w-64 bg-klaus-sidebar border-r border-klaus-border h-screen flex flex-col flex-shrink-0 fixed left-0 top-0 z-50">
@@ -82,29 +93,37 @@ export default function Sidebar() {
           <span className={`w-2 h-2 rounded-full ${healthDot[health]} ${health === 'healthy' ? 'animate-pulse' : ''}`} />
           <span className={`text-xs font-medium ${healthText[health]}`}>{healthLabel[health]}</span>
         </div>
-
         <button className="mt-4 w-full py-2 bg-klaus-card hover:bg-slate-700 text-klaus-text text-xs font-semibold rounded-lg border border-klaus-border transition-all">
           Ready for tasks
         </button>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-2">
-        {menuItems.map((item) => (
-          <button
-            key={item.name}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${item.active
-              ? 'bg-klaus-card text-ft-light border border-ft-light/20 shadow-sm'
-              : 'text-klaus-muted hover:text-klaus-text hover:bg-klaus-card/50'
+      <nav className="flex-1 px-4 py-6 space-y-1">
+        {menuItems.map((item) => {
+          const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href)
+          return (
+            <Link
+              key={item.name}
+              href={item.href}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${isActive
+                ? 'bg-klaus-card text-ft-light border border-ft-light/20 shadow-sm'
+                : 'text-klaus-muted hover:text-klaus-text hover:bg-klaus-card/50'
               }`}
-          >
-            <item.icon className="w-5 h-5" />
-            {item.name}
-          </button>
-        ))}
+            >
+              <item.icon className="w-5 h-5 shrink-0" />
+              <span className="flex-1">{item.name}</span>
+              {item.alertKey === 'inbox' && inboxCount > 0 && (
+                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                  {inboxCount}
+                </span>
+              )}
+            </Link>
+          )
+        })}
       </nav>
 
-      {/* Footer / Logout */}
+      {/* Footer */}
       <div className="p-4 border-t border-klaus-border/50">
         <button className="w-full flex items-center justify-center gap-2 text-klaus-muted hover:text-red-400 text-xs font-medium transition-colors p-2">
           <ArrowLeftOnRectangleIcon className="w-4 h-4" />
