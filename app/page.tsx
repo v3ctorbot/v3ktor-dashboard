@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Task, ActivityLogEntry, Note, Deliverable, Status, TokenUsage, TaskStatus, NoteStatus } from '@/lib/types'
+import { Task, ActivityLogEntry, Note, Deliverable, Status, TokenUsage, Goal, TaskStatus, NoteStatus } from '@/lib/types'
 import StatusPanel from '@/components/StatusPanel'
 import TaskBoard from '@/components/TaskBoard'
 import ActivityLog from '@/components/ActivityLog'
 import NotesPanel from '@/components/NotesPanel'
 import DeliverablesTab from '@/components/DeliverablesTab'
 import TokenUsageComponent from '@/components/TokenUsage'
+import GoalsPanel from '@/components/GoalsPanel'
 
 export default function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([])
@@ -17,6 +18,7 @@ export default function Dashboard() {
   const [deliverables, setDeliverables] = useState<Deliverable[]>([])
   const [status, setStatus] = useState<Status | null>(null)
   const [tokenUsage, setTokenUsage] = useState<TokenUsage[]>([])
+  const [goals, setGoals] = useState<Goal[]>([])
 
   useEffect(() => {
     // Initial data fetch
@@ -82,6 +84,18 @@ export default function Dashboard() {
         }
       })
 
+    const goalsSubscription = supabase
+      .channel('goals-channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'goals' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setGoals((prev) => [payload.new as Goal, ...prev])
+        } else if (payload.eventType === 'UPDATE') {
+          setGoals((prev) => prev.map((g) => (g.id === payload.new.id ? payload.new as Goal : g)))
+        } else if (payload.eventType === 'DELETE') {
+          setGoals((prev) => prev.filter((g) => g.id !== payload.old.id))
+        }
+      })
+
     return () => {
       tasksSubscription.unsubscribe()
       activitySubscription.unsubscribe()
@@ -89,18 +103,20 @@ export default function Dashboard() {
       statusSubscription.unsubscribe()
       deliverablesSubscription.unsubscribe()
       tokenSubscription.unsubscribe()
+      goalsSubscription.unsubscribe()
       if (typeof window !== 'undefined') window.removeEventListener('v3ktor:refresh', handleRefreshEvent)
     }
   }, [])
 
   const fetchAllData = async () => {
-    const [tasksRes, activityRes, notesRes, statusRes, deliverablesRes, tokenRes] = await Promise.all([
+    const [tasksRes, activityRes, notesRes, statusRes, deliverablesRes, tokenRes, goalsRes] = await Promise.all([
       supabase.from('tasks').select('*').order('created_at', { ascending: false }),
       supabase.from('activity_log').select('*').order('timestamp', { ascending: false }),
       supabase.from('notes').select('*').order('created_at', { ascending: false }),
       supabase.from('status').select('*').single(),
       supabase.from('deliverables').select('*').order('created_at', { ascending: false }),
-      supabase.from('token_usage').select('*').order('timestamp', { ascending: false })
+      supabase.from('token_usage').select('*').order('timestamp', { ascending: false }),
+      supabase.from('goals').select('*').order('created_at', { ascending: false })
     ])
 
     if (tasksRes.data) setTasks(tasksRes.data)
@@ -108,6 +124,7 @@ export default function Dashboard() {
     if (notesRes.data) setNotes(notesRes.data)
     if (deliverablesRes.data) setDeliverables(deliverablesRes.data)
     if (tokenRes.data) setTokenUsage(tokenRes.data)
+    if (goalsRes.data) setGoals(goalsRes.data)
 
     // Handle Status (Initialize if missing)
     if (statusRes.data) {
@@ -157,6 +174,7 @@ export default function Dashboard() {
                 state={status.operational_state}
                 currentTask={status.current_task}
                 currentTaskId={status.current_task_id}
+                lastSeen={status.updated_at}
                 activeSubAgents={status.active_sub_agents || []}
               />
             </div>
@@ -180,7 +198,12 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ROW 3: Tools (Communication & Artifacts) */}
+        {/* ROW 3: Goals */}
+        <div className="col-span-12">
+          <GoalsPanel goals={goals} />
+        </div>
+
+        {/* ROW 4: Tools (Communication & Artifacts) */}
         <div className="col-span-12 lg:col-span-6">
           <div className="h-full">
             <NotesPanel

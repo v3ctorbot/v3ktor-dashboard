@@ -7,6 +7,7 @@ interface StatusPanelProps {
   state: OperationalState
   currentTask: string | null
   currentTaskId: string | null
+  lastSeen: string | null
   activeSubAgents: Array<{
     role: string
     assigned_task: string
@@ -14,14 +15,45 @@ interface StatusPanelProps {
   }>
 }
 
-export default function StatusPanel({ state, currentTask, currentTaskId, activeSubAgents }: StatusPanelProps) {
+type HealthLevel = 'healthy' | 'stale' | 'dead'
+
+function getHealth(lastSeen: string | null): { level: HealthLevel; label: string; age: string } {
+  if (!lastSeen) return { level: 'dead', label: 'Unknown', age: '—' }
+  const minutesAgo = (Date.now() - new Date(lastSeen).getTime()) / 60000
+  if (minutesAgo < 10) return { level: 'healthy', label: 'Live', age: `${Math.floor(minutesAgo)}m ago` }
+  if (minutesAgo < 30) return { level: 'stale', label: 'Stale', age: `${Math.floor(minutesAgo)}m ago` }
+  const hoursAgo = minutesAgo / 60
+  const age = hoursAgo >= 1 ? `${Math.floor(hoursAgo)}h ago` : `${Math.floor(minutesAgo)}m ago`
+  return { level: 'dead', label: 'Offline', age }
+}
+
+export default function StatusPanel({ state, currentTask, currentTaskId, lastSeen, activeSubAgents }: StatusPanelProps) {
   const [time, setTime] = useState<string>('')
+  const [health, setHealth] = useState(() => getHealth(lastSeen))
 
   useEffect(() => {
     setTime(new Date().toLocaleTimeString())
     const interval = setInterval(() => setTime(new Date().toLocaleTimeString()), 1000)
     return () => clearInterval(interval)
   }, [])
+
+  useEffect(() => {
+    setHealth(getHealth(lastSeen))
+    const interval = setInterval(() => setHealth(getHealth(lastSeen)), 60000)
+    return () => clearInterval(interval)
+  }, [lastSeen])
+
+  const healthColors: Record<HealthLevel, string> = {
+    healthy: 'bg-green-500',
+    stale: 'bg-yellow-400',
+    dead: 'bg-red-500',
+  }
+
+  const healthTextColors: Record<HealthLevel, string> = {
+    healthy: 'text-green-400',
+    stale: 'text-yellow-400',
+    dead: 'text-red-400',
+  }
 
   const stateColors = {
     working: 'bg-green-500/20 text-green-300 border-green-500/50',
@@ -69,7 +101,14 @@ export default function StatusPanel({ state, currentTask, currentTaskId, activeS
             <h2 className="text-xl font-bold font-heading text-white">V3ktor</h2>
           </div>
         </div>
-        <div className="text-xs text-klaus-muted font-mono bg-klaus-bg px-2 py-1 rounded border border-klaus-border">{time}</div>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 bg-klaus-bg px-2 py-1 rounded border border-klaus-border">
+            <span className={`w-1.5 h-1.5 rounded-full ${healthColors[health.level]} ${health.level === 'healthy' ? 'animate-pulse' : ''}`} />
+            <span className={`text-[10px] font-semibold ${healthTextColors[health.level]}`}>{health.label}</span>
+            <span className="text-[10px] text-klaus-muted">{health.age}</span>
+          </div>
+          <div className="text-xs text-klaus-muted font-mono bg-klaus-bg px-2 py-1 rounded border border-klaus-border">{time}</div>
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col justify-center">
