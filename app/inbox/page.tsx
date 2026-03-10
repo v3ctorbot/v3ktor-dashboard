@@ -34,6 +34,7 @@ export default function InboxPage() {
   const [items, setItems] = useState<InboxItem[]>([])
   const [loading, setLoading] = useState(true)
   const [tasks, setTasks] = useState<Task[]>([])
+  const [creatingTask, setCreatingTask] = useState<string | null>(null) // tracks title being created
 
   const fetchAll = async () => {
     setLoading(true)
@@ -90,8 +91,22 @@ export default function InboxPage() {
   }
 
   const createTaskFromItem = async (title: string) => {
-    const taskId = `TASK-${Date.now().toString(36).toUpperCase()}`
-    await supabase.from('tasks').insert({ task_id: taskId, title, priority: 'high', status: 'todo', origin: 'user' })
+    if (creatingTask) return // already creating something
+    setCreatingTask(title)
+    try {
+      // Check for existing open task with same title to avoid duplicates
+      const { data: existing } = await supabase
+        .from('tasks')
+        .select('id')
+        .eq('title', title)
+        .in('status', ['todo', 'in_progress'])
+        .limit(1)
+      if (existing && existing.length > 0) return // already exists
+      const taskId = `TASK-${Date.now().toString(36).toUpperCase()}`
+      await supabase.from('tasks').insert({ task_id: taskId, title, priority: 'high', status: 'todo', origin: 'user' })
+    } finally {
+      setCreatingTask(null)
+    }
   }
 
   const decisionItems = items.filter(i => i.kind === 'decision')
@@ -137,6 +152,7 @@ export default function InboxPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {decisionItems.map((item) => (
                   <InboxCard key={(item.data as Briefing).id} item={item} tasks={tasks}
+                    creatingTask={creatingTask}
                     onResolve={() => resolveBriefing((item.data as Briefing).id)}
                     onCreateTask={() => createTaskFromItem((item.data as Briefing).title)}
                   />
@@ -156,6 +172,7 @@ export default function InboxPage() {
                   const id = 'id' in item.data ? item.data.id : idx.toString()
                   return (
                     <InboxCard key={id} item={item} tasks={tasks}
+                      creatingTask={creatingTask}
                       onResolve={item.kind === 'note' ? () => resolveNote((item.data as Note).id) : item.kind === 'alert' ? () => resolveBriefing((item.data as Briefing).id) : undefined}
                       onCreateTask={item.kind === 'stalled'
                         ? undefined
@@ -176,9 +193,10 @@ export default function InboxPage() {
   )
 }
 
-function InboxCard({ item, tasks, onResolve, onCreateTask }: {
+function InboxCard({ item, tasks, creatingTask, onResolve, onCreateTask }: {
   item: InboxItem
   tasks: Task[]
+  creatingTask: string | null
   onResolve?: () => void
   onCreateTask?: () => void
 }) {
@@ -242,10 +260,11 @@ function InboxCard({ item, tasks, onResolve, onCreateTask }: {
         {onCreateTask && (
           <button
             onClick={onCreateTask}
-            className="flex items-center gap-1 text-[11px] text-ft-light hover:text-white font-semibold transition-colors"
+            disabled={!!creatingTask}
+            className="flex items-center gap-1 text-[11px] text-ft-light hover:text-white font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <DocumentPlusIcon className="w-3.5 h-3.5" />
-            Create Task
+            {creatingTask ? 'Creating…' : 'Create Task'}
           </button>
         )}
         {onResolve && (
