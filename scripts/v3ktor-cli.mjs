@@ -6,7 +6,8 @@
  * 
  * Usage:
  *   node scripts/v3ktor-cli.mjs log <action> [target] [outcome] [metadata_json]
- *   node scripts/v3ktor-cli.mjs status <state> [current_task] [task_id]
+ *   node scripts/v3ktor-cli.mjs status <state|get> [current_task] [task_id] [active_model]
+ *   node scripts/v3ktor-cli.mjs heartbeat
  *   node scripts/v3ktor-cli.mjs task create <task_id> <title> [description] [priority] [status]
  *   node scripts/v3ktor-cli.mjs task update <task_id> <status>
  *   node scripts/v3ktor-cli.mjs task list [status]
@@ -14,7 +15,9 @@
  *   node scripts/v3ktor-cli.mjs notes seen <note_id>
  *   node scripts/v3ktor-cli.mjs notes processed <note_id> [related_task_id]
  *   node scripts/v3ktor-cli.mjs deliverable <title> <type> [file_path] [external_url] [task_id]
- *   node scripts/v3ktor-cli.mjs tokens <session_id> <tokens_used>
+ *   node scripts/v3ktor-cli.mjs tokens <session_id> <input_tokens> <output_tokens> [model] [context_used] [context_max]
+ *   node scripts/v3ktor-cli.mjs goal <create|update|list> ...
+ *   node scripts/v3ktor-cli.mjs summary <day|week|month>
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -85,18 +88,19 @@ async function updateStatus(state, currentTask, taskId, activeModel) {
 }
 
 async function createTask(taskId, title, description, priority, status) {
+  const now = new Date().toISOString()
   const { data, error } = await supabase
     .from('tasks')
-    .insert({
+    .upsert({
       task_id: taskId,
       title,
       description: description || null,
       priority: priority || 'medium',
       status: status || 'todo',
       origin: 'v3ktor',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    })
+      created_at: now,
+      updated_at: now
+    }, { onConflict: 'task_id', ignoreDuplicates: false })
     .select()
     .single()
 
@@ -246,23 +250,47 @@ async function getStatus() {
   console.log(JSON.stringify({ success: true, data: data || null }))
 }
 
+async function heartbeat() {
+  const { data: existing } = await supabase
+    .from('status')
+    .select('id')
+    .limit(1)
+    .single()
+
+  if (!existing) {
+    console.log(JSON.stringify({ success: false, error: 'No status row found. Run: status idle first.' }))
+    return
+  }
+
+  const { data, error } = await supabase
+    .from('status')
+    .update({ updated_at: new Date().toISOString() })
+    .eq('id', existing.id)
+    .select('id, operational_state, updated_at')
+    .single()
+
+  if (error) throw error
+  console.log(JSON.stringify({ success: true, data }))
+}
+
 // ============================================
 // GOALS MANAGEMENT
 // ============================================
 
 async function createGoal(goalId, title, description, targetDate, status) {
+  const now = new Date().toISOString()
   const { data, error } = await supabase
     .from('goals')
-    .insert({
+    .upsert({
       goal_id: goalId,
       title,
       description: description || null,
       target_date: targetDate || null,
       status: status || 'active',
       progress: 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    })
+      created_at: now,
+      updated_at: now
+    }, { onConflict: 'goal_id', ignoreDuplicates: false })
     .select()
     .single()
 
@@ -414,6 +442,10 @@ async function main() {
         }
         break
 
+      case 'heartbeat':
+        await heartbeat()
+        break
+
       case 'summary':
         await getTokenSummary(args[1] || 'day')
         break
@@ -424,7 +456,8 @@ async function main() {
           error: 'Unknown command',
           usage: {
             log: 'log <action> [target] [outcome] [metadata_json]',
-            status: 'status <state|get> [current_task] [task_id]',
+            status: 'status <state|get> [current_task] [task_id] [active_model]',
+            heartbeat: 'heartbeat  (lightweight ping — updates updated_at only)',
             task: 'task <create|update|list> ...',
             notes: 'notes <unseen|seen|processed> ...',
             deliverable: 'deliverable <title> <type> [file_path] [external_url] [task_id]',
