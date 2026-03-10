@@ -34,7 +34,13 @@ export default function InboxPage() {
   const [items, setItems] = useState<InboxItem[]>([])
   const [loading, setLoading] = useState(true)
   const [tasks, setTasks] = useState<Task[]>([])
-  const [creatingTask, setCreatingTask] = useState<string | null>(null) // tracks title being created
+  const [creatingTask, setCreatingTask] = useState<string | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
+
+  const showToast = (msg: string) => {
+    setToast(msg)
+    setTimeout(() => setToast(null), 3000)
+  }
 
   const fetchAll = async () => {
     setLoading(true)
@@ -91,19 +97,21 @@ export default function InboxPage() {
   }
 
   const createTaskFromItem = async (title: string) => {
-    if (creatingTask) return // already creating something
+    if (creatingTask) return
     setCreatingTask(title)
     try {
-      // Check for existing open task with same title to avoid duplicates
       const { data: existing } = await supabase
-        .from('tasks')
-        .select('id')
-        .eq('title', title)
-        .in('status', ['todo', 'in_progress'])
-        .limit(1)
-      if (existing && existing.length > 0) return // already exists
+        .from('tasks').select('id').eq('title', title).in('status', ['todo', 'in_progress']).limit(1)
+      if (existing && existing.length > 0) {
+        showToast('Task already exists in the board')
+        return
+      }
       const taskId = `TASK-${Date.now().toString(36).toUpperCase()}`
-      await supabase.from('tasks').insert({ task_id: taskId, title, priority: 'high', status: 'todo', origin: 'user' })
+      const { error } = await supabase.from('tasks').insert({
+        task_id: taskId, title, priority: 'high', status: 'todo', origin: 'user'
+      })
+      if (error) { showToast('Failed to create task'); return }
+      showToast(`Task created: ${taskId}`)
     } finally {
       setCreatingTask(null)
     }
@@ -114,6 +122,13 @@ export default function InboxPage() {
 
   return (
     <div className="min-h-screen">
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-klaus-card border border-ft-light/30 text-white text-sm font-semibold px-4 py-3 rounded-xl shadow-xl animate-in fade-in slide-in-from-bottom-4">
+          {toast}
+        </div>
+      )}
+
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold font-heading text-white flex items-center gap-3">

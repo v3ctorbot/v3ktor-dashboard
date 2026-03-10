@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Note, Task } from '@/lib/types'
+import { ChatBubbleBottomCenterTextIcon, PlusIcon, EyeIcon, CheckIcon } from '@heroicons/react/24/outline'
 
 interface NotesPanelProps {
   notes: Note[]
@@ -11,19 +12,38 @@ interface NotesPanelProps {
   onMarkProcessed: (noteId: string, relatedTaskId?: string) => void
 }
 
-import { ChatBubbleBottomCenterTextIcon } from '@heroicons/react/24/outline'
+const statusConfig = {
+  unseen: {
+    border: 'border-l-yellow-400/70',
+    badge: 'bg-yellow-500/15 text-yellow-300 border-yellow-500/40',
+    dot: 'bg-yellow-400 animate-pulse',
+    label: 'Unseen',
+  },
+  seen: {
+    border: 'border-l-blue-400/70',
+    badge: 'bg-blue-500/15 text-blue-300 border-blue-500/40',
+    dot: 'bg-blue-400',
+    label: 'Seen',
+  },
+  processed: {
+    border: 'border-l-green-500/50',
+    badge: 'bg-green-500/15 text-green-300 border-green-500/40',
+    dot: 'bg-green-500',
+    label: 'Processed',
+  },
+}
 
 export default function NotesPanel({ notes, tasks, onAddNote, onMarkSeen, onMarkProcessed }: NotesPanelProps) {
   const [newNote, setNewNote] = useState('')
+  const [isAdding, setIsAdding] = useState(false)
   const [processingNoteId, setProcessingNoteId] = useState<string | null>(null)
-  const [selectedTaskId, setSelectedTaskId] = useState<string>('')
+  const [selectedTaskId, setSelectedTaskId] = useState('')
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (newNote.trim()) {
-      onAddNote(newNote.trim())
-      setNewNote('')
-    }
+  const handleSubmit = () => {
+    if (!newNote.trim()) return
+    onAddNote(newNote.trim())
+    setNewNote('')
+    setIsAdding(false)
   }
 
   const handleProcessSubmit = (noteId: string) => {
@@ -32,131 +52,130 @@ export default function NotesPanel({ notes, tasks, onAddNote, onMarkSeen, onMark
     setSelectedTaskId('')
   }
 
-  const statusStyles = {
-    unseen: 'bg-yellow-500/10 border-yellow-500/30',
-    seen: 'bg-blue-500/10 border-blue-500/30',
-    processed: 'bg-green-500/10 border-green-500/30',
-  }
-
-  const statusLabels = {
-    unseen: '📬 Unseen',
-    seen: '👁️ Seen',
-    processed: '✅ Processed',
-  }
+  const unseen = notes.filter(n => n.status === 'unseen').length
 
   return (
-    <div className="card h-full flex flex-col">
-      <div className="flex items-center gap-3 mb-4 border-b border-klaus-border pb-3">
-        <ChatBubbleBottomCenterTextIcon className="text-ft-light w-5 h-5" />
-        <h2 className="text-xl font-bold text-white font-heading">Notes</h2>
+    <div className="card flex flex-col gap-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <ChatBubbleBottomCenterTextIcon className="w-5 h-5 text-ft-light" />
+          <h2 className="text-base font-bold font-heading text-white">Notes</h2>
+          {unseen > 0 && (
+            <span className="bg-yellow-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full">{unseen}</span>
+          )}
+        </div>
+        <button
+          onClick={() => setIsAdding(v => !v)}
+          className="flex items-center gap-1 text-xs font-semibold text-ft-light hover:text-white transition-colors"
+        >
+          <PlusIcon className="w-3.5 h-3.5" />
+          New Note
+        </button>
       </div>
 
-      {/* Add New Note */}
-      <form onSubmit={handleSubmit} className="mb-6">
-        <textarea
-          value={newNote}
-          onChange={(e) => setNewNote(e.target.value)}
-          placeholder="Add a note or instruction for V3ktor..."
-          className="input min-h-[80px]"
-          rows={3}
-        />
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            disabled={!newNote.trim()}
-            className="mt-2 text-xs font-bold uppercase tracking-wider bg-ft-light text-white px-4 py-2 rounded hover:bg-ft-light/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-          >
-            Add Note
-          </button>
+      {/* Compose */}
+      {isAdding && (
+        <div className="bg-klaus-bg border border-klaus-border rounded-lg p-3 flex flex-col gap-2 animate-in fade-in slide-in-from-top-2">
+          <textarea
+            value={newNote}
+            onChange={e => setNewNote(e.target.value)}
+            placeholder="Write a note or instruction for V3ktor…"
+            className="textarea text-sm resize-none"
+            rows={3}
+            autoFocus
+            onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit() }}
+          />
+          <div className="flex justify-end gap-2">
+            <button onClick={() => { setIsAdding(false); setNewNote('') }} className="text-xs text-gray-500 hover:text-white px-2">Cancel</button>
+            <button
+              onClick={handleSubmit}
+              disabled={!newNote.trim()}
+              className="btn text-xs px-4 disabled:opacity-40"
+            >
+              Send
+            </button>
+          </div>
+          <p className="text-[10px] text-gray-600">Tip: Cmd+Enter to send</p>
         </div>
-      </form>
+      )}
 
-      {/* Notes List */}
-      <div className="flex-1 space-y-3 overflow-y-auto pr-2">
+      {/* Notes list */}
+      <div className="space-y-2 overflow-y-auto max-h-[420px] pr-1">
         {notes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-3 text-gray-500 h-24">
-            <div className="rounded-full bg-klaus-bg border border-klaus-border flex items-center justify-center p-2">
-              <ChatBubbleBottomCenterTextIcon className="w-5 h-5 text-gray-600" />
-            </div>
-            <p className="italic text-xs">No notes yet.</p>
+          <div className="text-center py-10 text-klaus-muted">
+            <ChatBubbleBottomCenterTextIcon className="w-8 h-8 mx-auto mb-2 opacity-30" />
+            <p className="text-sm italic">No notes yet.</p>
           </div>
         ) : (
-          notes.map((note) => (
-            <div key={note.id} className={`p-4 rounded-lg border-l-4 border-y border-r border-klaus-border ${statusStyles[note.status]}`}>
-              <div className="flex justify-between items-start mb-2">
-                <span className={`font-semibold text-xs uppercase tracking-wide ${note.status === 'unseen' ? 'text-yellow-400' : note.status === 'seen' ? 'text-blue-400' : 'text-green-400'
-                  }`}>
-                  {statusLabels[note.status]}
-                </span>
-                <span className="text-[10px] text-gray-500 font-mono">
-                  {new Date(note.created_at).toLocaleString()}
-                </span>
-              </div>
-
-              <p className="text-gray-300 text-sm mb-3 whitespace-pre-wrap">{note.content}</p>
-
-              {note.related_task_id && (
-                <div className="text-xs text-ft-light font-medium mb-2 border-t border-white/5 pt-2">
-                  <span className="text-klaus-muted">Related to task:</span> {note.related_task_id}
+          notes.map(note => {
+            const cfg = statusConfig[note.status]
+            return (
+              <div
+                key={note.id}
+                className={`bg-klaus-bg border border-r border-t border-b border-l-2 border-l-transparent border-klaus-border rounded-lg p-3 flex flex-col gap-2 ${cfg.border}`}
+              >
+                {/* Top row */}
+                <div className="flex items-center justify-between">
+                  <span className={`inline-flex items-center gap-1.5 text-[10px] font-semibold px-1.5 py-0.5 rounded border ${cfg.badge}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+                    {cfg.label}
+                  </span>
+                  <span className="text-[10px] text-gray-600 font-mono">{new Date(note.created_at).toLocaleString()}</span>
                 </div>
-              )}
 
-              {/* Action Buttons */}
-              <div className="flex gap-2 mt-3 pt-2 border-t border-white/5">
-                {note.status === 'unseen' && (
-                  <button
-                    onClick={() => onMarkSeen(note.id)}
-                    className="px-3 py-1 text-xs bg-klaus-bg border border-blue-500/30 text-blue-300 rounded hover:bg-blue-500/20 transition-colors"
-                  >
-                    Mark Seen
-                  </button>
+                {/* Content */}
+                <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">{note.content}</p>
+
+                {note.related_task_id && (
+                  <p className="text-[10px] text-ft-light/60 font-mono">→ {note.related_task_id}</p>
                 )}
-                {note.status === 'seen' && (
-                  <div className="flex-1">
-                    {processingNoteId === note.id ? (
-                      <div className="bg-klaus-bg p-2 rounded border border-klaus-border animate-in fade-in zoom-in-95">
-                        <label className="block text-xs font-semibold text-gray-400 mb-1">Link Task (Optional):</label>
-                        <select
-                          value={selectedTaskId}
-                          onChange={(e) => setSelectedTaskId(e.target.value)}
-                          className="w-full text-xs bg-klaus-card border border-klaus-border rounded px-2 py-1 mb-2 text-white focus:outline-none focus:border-ft-light"
-                        >
-                          <option value="">-- No Linked Task --</option>
-                          {tasks.map(t => (
-                            <option key={t.id} value={t.task_id}>{t.task_id}: {t.title}</option>
-                          ))}
-                        </select>
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => setProcessingNoteId(null)}
-                            className="px-2 py-1 text-xs text-gray-500 hover:text-gray-300"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            onClick={() => handleProcessSubmit(note.id)}
-                            className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-500"
-                          >
-                            Confirm Processed
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
+
+                {/* Actions */}
+                {note.status !== 'processed' && (
+                  <div className="flex items-center gap-2 pt-1 border-t border-klaus-border/50">
+                    {note.status === 'unseen' && (
                       <button
-                        onClick={() => {
-                          setProcessingNoteId(note.id)
-                          setSelectedTaskId('')
-                        }}
-                        className="px-3 py-1 text-xs bg-klaus-bg border border-green-500/30 text-green-300 rounded hover:bg-green-500/20 transition-colors"
+                        onClick={() => onMarkSeen(note.id)}
+                        className="flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300 font-semibold transition-colors"
                       >
-                        Mark Processed
+                        <EyeIcon className="w-3.5 h-3.5" /> Mark Seen
                       </button>
+                    )}
+                    {note.status === 'seen' && (
+                      processingNoteId === note.id ? (
+                        <div className="w-full flex flex-col gap-2">
+                          <select
+                            value={selectedTaskId}
+                            onChange={e => setSelectedTaskId(e.target.value)}
+                            className="w-full text-xs bg-klaus-card border border-klaus-border rounded px-2 py-1 text-white focus:outline-none focus:border-ft-light"
+                          >
+                            <option value="">No linked task</option>
+                            {tasks.filter(t => t.status !== 'done').map(t => (
+                              <option key={t.id} value={t.task_id}>{t.task_id}: {t.title}</option>
+                            ))}
+                          </select>
+                          <div className="flex gap-2 justify-end">
+                            <button onClick={() => setProcessingNoteId(null)} className="text-xs text-gray-500 hover:text-white">Cancel</button>
+                            <button onClick={() => handleProcessSubmit(note.id)} className="flex items-center gap-1 text-xs bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded font-semibold">
+                              <CheckIcon className="w-3 h-3" /> Confirm
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => { setProcessingNoteId(note.id); setSelectedTaskId('') }}
+                          className="flex items-center gap-1 text-[11px] text-green-400 hover:text-green-300 font-semibold transition-colors"
+                        >
+                          <CheckIcon className="w-3.5 h-3.5" /> Mark Processed
+                        </button>
+                      )
                     )}
                   </div>
                 )}
               </div>
-            </div>
-          ))
+            )
+          })
         )}
       </div>
     </div>
