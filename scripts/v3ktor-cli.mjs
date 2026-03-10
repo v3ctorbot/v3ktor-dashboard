@@ -190,8 +190,14 @@ async function createDeliverable(title, type, filePath, externalUrl, taskId) {
   console.log(JSON.stringify({ success: true, data }))
 }
 
+// Models on flat subscription — log tokens for visibility, cost = 0
+const SUBSCRIPTION_MODELS = new Set([
+  'openai-codex/gpt-5.2',
+])
+
 // Model pricing per million tokens (USD)
 const MODEL_PRICING = {
+  'openai-codex/gpt-5.2': { input: 0, output: 0 }, // subscription plan
   'anthropic/claude-opus-4-6': { input: 5, output: 25 },
   'anthropic/claude-opus-4-5': { input: 5, output: 25 },
   'anthropic/claude-sonnet-4-6': { input: 3, output: 15 },

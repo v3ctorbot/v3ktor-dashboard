@@ -9,6 +9,11 @@ interface TokenUsageProps {
   activeModel?: string | null
 }
 
+// Models on flat subscription — token counts logged for visibility only, no cost calculated
+const SUBSCRIPTION_MODELS = new Set([
+  'openai-codex/gpt-5.2',
+])
+
 // Actual pricing per million tokens (USD) — matches CLI
 const MODEL_PRICING: Record<string, { input: number; output: number }> = {
   'anthropic/claude-opus-4-6':    { input: 5,    output: 25   },
@@ -27,6 +32,7 @@ const MODEL_PRICING: Record<string, { input: number; output: number }> = {
 }
 
 const MODEL_NAME: Record<string, string> = {
+  'openai-codex/gpt-5.2':         'GPT-5.2 (Codex)',
   'anthropic/claude-opus-4-6':    'Claude Opus 4.6',
   'anthropic/claude-opus-4-5':    'Claude Opus 4.5',
   'anthropic/claude-sonnet-4-6':  'Claude Sonnet 4.6',
@@ -42,6 +48,7 @@ const MODEL_NAME: Record<string, string> = {
 }
 
 const MODEL_COLOR: Record<string, string> = {
+  'openai-codex/gpt-5.2':         'text-emerald-400',
   'anthropic/claude-opus-4-6':    'text-amber-300',
   'anthropic/claude-opus-4-5':    'text-amber-400',
   'anthropic/claude-sonnet-4-6':  'text-blue-400',
@@ -69,8 +76,10 @@ export default function TokenUsagePanel({ usage, activeModel }: TokenUsageProps)
 
   const filtered = view === 'today' ? usage.filter(e => isToday(e.timestamp)) : usage
 
-  const totalCostAll   = usage.reduce((s, e) => s + (parseFloat(String(e.estimated_cost)) || 0), 0)
-  const totalCostToday = usage.filter(e => isToday(e.timestamp)).reduce((s, e) => s + (parseFloat(String(e.estimated_cost)) || 0), 0)
+  // Only include token-billed models in cost totals
+  const isSub = (model?: string | null) => SUBSCRIPTION_MODELS.has(model ?? '')
+  const totalCostAll   = usage.filter(e => !isSub(e.model)).reduce((s, e) => s + (parseFloat(String(e.estimated_cost)) || 0), 0)
+  const totalCostToday = usage.filter(e => isToday(e.timestamp) && !isSub(e.model)).reduce((s, e) => s + (parseFloat(String(e.estimated_cost)) || 0), 0)
 
   const totalInput  = filtered.reduce((s, e) => s + (e.input_tokens  || 0), 0)
   const totalOutput = filtered.reduce((s, e) => s + (e.output_tokens || 0), 0)
@@ -98,16 +107,22 @@ export default function TokenUsagePanel({ usage, activeModel }: TokenUsageProps)
       </div>
 
       {/* Active model + pricing */}
-      {currentModel && pricing && (
+      {currentModel && (
         <div className="bg-klaus-bg border border-klaus-border rounded-lg p-3">
           <div className="flex items-start justify-between mb-2">
             <div>
               <p className="text-[10px] text-klaus-muted uppercase tracking-wider mb-0.5">Active Model</p>
               <p className={`text-sm font-bold ${getColor(currentModel)}`}>{getName(currentModel)}</p>
             </div>
-            <div className="text-right text-[10px] text-klaus-muted leading-relaxed">
-              <div>${pricing.input}/MTok in</div>
-              <div>${pricing.output}/MTok out</div>
+            <div className="text-right text-[10px] leading-relaxed">
+              {isSub(currentModel) ? (
+                <span className="text-emerald-400 font-semibold">Subscription plan</span>
+              ) : pricing ? (
+                <span className="text-klaus-muted">
+                  <div>${pricing.input}/MTok in</div>
+                  <div>${pricing.output}/MTok out</div>
+                </span>
+              ) : null}
             </div>
           </div>
 
@@ -176,9 +191,10 @@ export default function TokenUsagePanel({ usage, activeModel }: TokenUsageProps)
           </div>
         ) : (
           filtered.slice(0, 12).map((entry) => {
+            const sub = isSub(entry.model)
             const p = getPricing(entry.model || '')
-            const inputCost  = ((entry.input_tokens  || 0) / 1_000_000) * p.input
-            const outputCost = ((entry.output_tokens || 0) / 1_000_000) * p.output
+            const inputCost  = sub ? 0 : ((entry.input_tokens  || 0) / 1_000_000) * p.input
+            const outputCost = sub ? 0 : ((entry.output_tokens || 0) / 1_000_000) * p.output
             const total = entry.tokens_used || (entry.input_tokens || 0) + (entry.output_tokens || 0)
             const inputPct = total > 0 ? ((entry.input_tokens || 0) / total) * 100 : 50
 
@@ -191,7 +207,10 @@ export default function TokenUsagePanel({ usage, activeModel }: TokenUsageProps)
                   </div>
                   <div className="text-right">
                     <p className="text-xs font-bold text-white">{total.toLocaleString()} tok</p>
-                    <p className="text-[10px] text-amber-400">${(inputCost + outputCost).toFixed(4)}</p>
+                    {sub
+                      ? <p className="text-[10px] text-emerald-400">subscription</p>
+                      : <p className="text-[10px] text-amber-400">${(inputCost + outputCost).toFixed(4)}</p>
+                    }
                   </div>
                 </div>
                 {/* Input/output split bar */}
